@@ -57,14 +57,14 @@ let ballVelocity = { x: 4, y: -4 };
 
 let start = false;
 
-app.stage.on("mousemove", (e: PIXI.FederatedPointerEvent) => {
+app.stage.on("pointermove", (e: PIXI.FederatedPointerEvent) => {
   bar.x = e.x - bar.width / 2;
 
   if (!start) {
     ball.x = e.x;
   }
 });
-app.stage.on("click", () => {
+app.stage.on("pointerdown", () => {
   start = true;
 });
 
