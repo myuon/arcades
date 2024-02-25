@@ -29,16 +29,26 @@ app.stage.addChild(bar);
 app.stage.eventMode = "static";
 app.stage.hitArea = app.screen;
 
+const stagePadding = { x: 20, y: 20 };
+const blockNum = { x: 5, y: 5 };
+const blockGap = { x: 5, y: 5 };
+
 const blocks: PIXI.Graphics[] = [];
 
-for (let j = 0; j < 4; j++) {
-  for (let i = 0; i < 4; i++) {
+for (let j = 0; j < blockNum.y; j++) {
+  for (let i = 0; i < blockNum.x; i++) {
     const block = new PIXI.Graphics();
-    block.beginFill(0x0000ff);
-    block.drawRect(0, 0, 100, 20);
+    block.beginFill(0x0000ff + 0xff0000 * (j / blockNum.y));
+    block.drawRect(
+      0,
+      0,
+      (app.screen.width - stagePadding.x * 2 - blockGap.x * (blockNum.x - 1)) /
+        blockNum.x,
+      20
+    );
     block.endFill();
-    block.x = i * 120 + 25;
-    block.y = j * 30 + 25;
+    block.x = i * (block.width + blockGap.x) + stagePadding.x;
+    block.y = j * (block.height + blockGap.y) + stagePadding.y;
 
     blocks.push(block);
     app.stage.addChild(block);
@@ -53,7 +63,11 @@ ball.x = 250;
 ball.y = bar.y - 25;
 app.stage.addChild(ball);
 
-let ballVelocity = { x: 4, y: -4 };
+const ballVelocityInitial = {
+  x: 6 * Math.cos(-Math.PI / 4),
+  y: 6 * Math.sin(-Math.PI / 4),
+};
+let ballVelocity = { ...ballVelocityInitial };
 
 let start = false;
 
@@ -83,13 +97,19 @@ app.ticker.add((delta) => {
     }
 
     if (intersect(ball.getBounds(), bar.getBounds())) {
-      ballVelocity.y *= -1;
+      const barCenter = bar.x + bar.width / 2;
+      const hitRate = (ball.x - barCenter) / (bar.width / 2);
+
+      ballVelocity.x = 6 * hitRate;
+      ballVelocity.y = -Math.sqrt(36 - ballVelocity.x ** 2);
     }
 
     if (ball.y >= 500) {
       start = false;
       ball.x = 250;
       ball.y = bar.y - 25;
+
+      ballVelocity = { ...ballVelocityInitial };
     }
 
     for (let i = 0; i < blocks.length; i++) {
