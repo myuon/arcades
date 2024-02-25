@@ -9,7 +9,7 @@ export default function Page() {
         </Link>
       </header>
 
-      <Outlet></Outlet>
+      <Outlet />
     </>
   );
 }

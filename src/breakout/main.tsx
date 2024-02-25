@@ -1,7 +1,7 @@
-import * as PIXI from "pixi.js";
-import * as sss from "sounds-some-sounds";
 import chroma from "chroma-js";
+import * as PIXI from "pixi.js";
 import { useEffect, useRef } from "react";
+import * as sss from "sounds-some-sounds";
 
 const intersect = (a: PIXI.Rectangle, b: PIXI.Rectangle) => {
   return (
@@ -43,7 +43,9 @@ const main = () => {
       for (let i = 0; i < blockNum.x; i++) {
         const block = new PIXI.Graphics();
         block.beginFill(
-          chroma.scale(["#00ffff", "#ff00ff"]).mode("lab").colors(blockNum.y)[j]
+          chroma.scale(["#00ffff", "#ff00ff"]).mode("lab").colors(blockNum.y)[
+            j
+          ],
         );
         block.drawRect(
           0,
@@ -52,7 +54,7 @@ const main = () => {
             stagePadding.x * 2 -
             blockGap.x * (blockNum.x - 1)) /
             blockNum.x,
-          20
+          20,
         );
         block.endFill();
         block.x = i * (block.width + blockGap.x) + stagePadding.x;
@@ -168,7 +170,8 @@ const main = () => {
       if (ball.x <= 0 || ball.x >= 500) {
         ballVelocity.x *= -1;
         return;
-      } else if (ball.y <= 0) {
+      }
+      if (ball.y <= 0) {
         ballVelocity.y *= -1;
         return;
       }
@@ -219,17 +222,16 @@ export default function Page() {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    let app: PIXI.Application;
     sss.init();
     sss.setVolume(0.05);
 
-    app = main();
-    ref.current!.replaceChildren(app.view as unknown as Node);
+    const app = main();
+    ref.current?.replaceChildren(app.view as unknown as Node);
 
     return () => {
       app.destroy();
     };
   }, []);
 
-  return <div ref={ref}></div>;
+  return <div ref={ref} />;
 }

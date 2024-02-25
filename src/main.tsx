@@ -1,30 +1,31 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import Breakout from "./breakout/main";
-import RootPage from "./page";
 import { RouterProvider, createBrowserRouter } from "react-router-dom";
+import Breakout from "./breakout/main";
 import RootLayout from "./layout";
+import RootPage from "./page";
 
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <RootLayout></RootLayout>,
+    element: <RootLayout />,
     children: [
       {
         path: "/",
-        element: <RootPage></RootPage>,
+        element: <RootPage />,
         index: true,
       },
       {
         path: "/breakout",
-        element: <Breakout></Breakout>,
+        element: <Breakout />,
       },
     ],
   },
 ]);
 
+// biome-ignore lint/style/noNonNullAssertion: <explanation>
 ReactDOM.createRoot(document.getElementById("app")!).render(
   <React.StrictMode>
     <RouterProvider router={router} />
-  </React.StrictMode>
+  </React.StrictMode>,
 );
