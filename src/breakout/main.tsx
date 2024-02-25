@@ -2,15 +2,7 @@ import chroma from "chroma-js";
 import * as PIXI from "pixi.js";
 import { useEffect, useRef } from "react";
 import * as sss from "sounds-some-sounds";
-
-const intersect = (a: PIXI.Rectangle, b: PIXI.Rectangle) => {
-  return (
-    a.x + a.width > b.x &&
-    a.x < b.x + b.width &&
-    a.y + a.height > b.y &&
-    a.y < b.y + b.height
-  );
-};
+import { intersect } from "../utils/intersect";
 
 const main = () => {
   const app = new PIXI.Application({ width: 500, height: 500 });
@@ -125,10 +117,10 @@ const main = () => {
   gameclearTextH1.y = 250 - gameclearTextH1.height / 2;
 
   app.stage.on("pointermove", (e: PIXI.FederatedPointerEvent) => {
-    bar.x = e.x - bar.width / 2;
+    bar.x = e.global.x - bar.width / 2;
 
     if (!mode) {
-      ball.x = e.x;
+      ball.x = e.global.x;
     }
   });
   app.stage.on("pointerdown", () => {
