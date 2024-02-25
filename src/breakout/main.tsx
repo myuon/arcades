@@ -191,6 +191,7 @@ const main = () => {
           ballVelocity.y *= -1;
         }
         sss.playSoundEffect("laser");
+        sss.update();
         return;
       }
 
@@ -231,6 +232,7 @@ const main = () => {
           app.stage.removeChild(blocks[i]);
           blocks.splice(i, 1);
           sss.playSoundEffect("hit");
+          sss.update();
         }
       }
     }
