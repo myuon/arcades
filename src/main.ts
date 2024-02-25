@@ -1,5 +1,6 @@
 import * as PIXI from "pixi.js";
 import * as sss from "sounds-some-sounds";
+import chroma from "chroma-js";
 
 const intersect = (a: PIXI.Rectangle, b: PIXI.Rectangle) => {
   return (
@@ -40,7 +41,9 @@ const main = () => {
   for (let j = 0; j < blockNum.y; j++) {
     for (let i = 0; i < blockNum.x; i++) {
       const block = new PIXI.Graphics();
-      block.beginFill(0x0000ff + 0xff0000 * (j / blockNum.y));
+      block.beginFill(
+        chroma.scale(["#00ffff", "#ff00ff"]).mode("lab").colors(blockNum.y)[j]
+      );
       block.drawRect(
         0,
         0,
@@ -85,9 +88,11 @@ const main = () => {
     }
   });
   app.stage.on("pointerdown", () => {
+    if (!start) {
+      sss.play("start");
+      sss.playBgm();
+    }
     start = true;
-    sss.play("start");
-    sss.playBgm();
   });
 
   app.ticker.add((delta) => {
@@ -130,7 +135,9 @@ const main = () => {
           ballVelocity.y *= -1;
           app.stage.removeChild(blocks[i]);
           blocks.splice(i, 1);
-          sss.play("laser");
+          sss.playSoundEffect("laser", {
+            numberOfSounds: 10,
+          });
           return;
         }
       }

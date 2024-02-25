@@ -9,10 +9,12 @@
     "preview": "vite preview"
   },
   "devDependencies": {
+    "@types/chroma-js": "^2.4.4",
     "typescript": "^5.0.2",
     "vite": "^4.4.5"
   },
   "dependencies": {
+    "chroma-js": "^2.4.2",
     "crisp-game-lib": "^1.1.1",
     "pixi.js": "^7.4.0",
     "sounds-some-sounds": "^3.0.0"
