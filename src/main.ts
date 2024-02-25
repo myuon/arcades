@@ -38,29 +38,33 @@ const main = () => {
 
   const blocks: PIXI.Graphics[] = [];
 
-  for (let j = 0; j < blockNum.y; j++) {
-    for (let i = 0; i < blockNum.x; i++) {
-      const block = new PIXI.Graphics();
-      block.beginFill(
-        chroma.scale(["#00ffff", "#ff00ff"]).mode("lab").colors(blockNum.y)[j]
-      );
-      block.drawRect(
-        0,
-        0,
-        (app.screen.width -
-          stagePadding.x * 2 -
-          blockGap.x * (blockNum.x - 1)) /
-          blockNum.x,
-        20
-      );
-      block.endFill();
-      block.x = i * (block.width + blockGap.x) + stagePadding.x;
-      block.y = j * (block.height + blockGap.y) + stagePadding.y;
+  const initializeBlocks = () => {
+    for (let j = 0; j < blockNum.y; j++) {
+      for (let i = 0; i < blockNum.x; i++) {
+        const block = new PIXI.Graphics();
+        block.beginFill(
+          chroma.scale(["#00ffff", "#ff00ff"]).mode("lab").colors(blockNum.y)[j]
+        );
+        block.drawRect(
+          0,
+          0,
+          (app.screen.width -
+            stagePadding.x * 2 -
+            blockGap.x * (blockNum.x - 1)) /
+            blockNum.x,
+          20
+        );
+        block.endFill();
+        block.x = i * (block.width + blockGap.x) + stagePadding.x;
+        block.y = j * (block.height + blockGap.y) + stagePadding.y;
 
-      blocks.push(block);
-      app.stage.addChild(block);
+        blocks.push(block);
+        app.stage.addChild(block);
+      }
     }
-  }
+  };
+
+  initializeBlocks();
 
   const ball = new PIXI.Graphics();
   ball.beginFill(0xffff00);
@@ -76,30 +80,88 @@ const main = () => {
   };
   let ballVelocity = { ...ballVelocityInitial };
 
-  let start = false;
+  let mode = "start";
 
   let elapsed = 0.0;
+
+  const startScreenTextH1 = new PIXI.Text("BREAKOUT", {
+    fontFamily: "serif",
+    fontSize: 64,
+    fill: 0xffffff,
+    stroke: 0x0044ff,
+  });
+  startScreenTextH1.x = 250 - startScreenTextH1.width / 2;
+  startScreenTextH1.y = 250 - startScreenTextH1.height / 2;
+  app.stage.addChild(startScreenTextH1);
+
+  const startScreenTextH2 = new PIXI.Text("CLICK TO START", {
+    fontFamily: "serif",
+    fontSize: 24,
+    fill: 0xffffff,
+    stroke: 0x0044ff,
+  });
+  startScreenTextH2.x = 250 - startScreenTextH2.width / 2;
+  startScreenTextH2.y = 250 + startScreenTextH1.height / 2;
+  app.stage.addChild(startScreenTextH2);
+
+  const gameoverTextH1 = new PIXI.Text("GAME OVER", {
+    fontFamily: "serif",
+    fontSize: 64,
+    fill: 0xffffff,
+    stroke: 0x0044ff,
+  });
+  gameoverTextH1.x = 250 - gameoverTextH1.width / 2;
+  gameoverTextH1.y = 250 - gameoverTextH1.height / 2;
+
+  const gameclearTextH1 = new PIXI.Text("GAME CLEAR", {
+    fontFamily: "serif",
+    fontSize: 64,
+    fill: 0xffffff,
+    stroke: 0x0044ff,
+  });
+  gameclearTextH1.x = 250 - gameclearTextH1.width / 2;
+  gameclearTextH1.y = 250 - gameclearTextH1.height / 2;
 
   app.stage.on("pointermove", (e: PIXI.FederatedPointerEvent) => {
     bar.x = e.x - bar.width / 2;
 
-    if (!start) {
+    if (!mode) {
       ball.x = e.x;
     }
   });
   app.stage.on("pointerdown", () => {
-    if (!start) {
+    if (mode === "start") {
       sss.play("start");
       sss.playBgm();
+      mode = "play";
+      app.stage.removeChild(startScreenTextH1);
+      app.stage.removeChild(startScreenTextH2);
+    } else if (mode === "gameover" || mode === "clear") {
+      mode = "start";
+      app.stage.removeChild(gameoverTextH1);
+      app.stage.removeChild(gameclearTextH1);
+      ball.x = 250;
+      ball.y = bar.y - 25;
+      initializeBlocks();
+
+      app.stage.addChild(startScreenTextH1);
+      app.stage.addChild(startScreenTextH2);
     }
-    start = true;
   });
 
   app.ticker.add((delta) => {
     sss.update();
     elapsed += delta;
 
-    if (start) {
+    if (mode === "play") {
+      if (blocks.length === 0) {
+        mode = "clear";
+        sss.stopBgm();
+        sss.play("gameclear");
+        app.stage.addChild(gameclearTextH1);
+        return;
+      }
+
       ball.x += ballVelocity.x * delta;
       ball.y += ballVelocity.y * delta;
 
@@ -122,11 +184,16 @@ const main = () => {
       }
 
       if (ball.y >= 500) {
-        start = false;
+        mode = "gameover";
         ball.x = 250;
         ball.y = bar.y - 25;
 
         ballVelocity = { ...ballVelocityInitial };
+
+        sss.play("gameover");
+        sss.stopBgm();
+
+        app.stage.addChild(gameoverTextH1);
         return;
       }
 
@@ -135,10 +202,7 @@ const main = () => {
           ballVelocity.y *= -1;
           app.stage.removeChild(blocks[i]);
           blocks.splice(i, 1);
-          sss.playSoundEffect("laser", {
-            numberOfSounds: 10,
-          });
-          return;
+          sss.playSoundEffect("laser");
         }
       }
     }
