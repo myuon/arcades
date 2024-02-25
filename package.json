@@ -11,7 +11,9 @@
   "devDependencies": {
     "@types/chroma-js": "^2.4.4",
     "@types/node": "^20.11.20",
-    "fast-glob": "^3.3.2",
+    "@types/react": "^18.2.58",
+    "@types/react-dom": "^18.2.19",
+    "@vitejs/plugin-react": "^4.2.1",
     "typescript": "^5.0.2",
     "vite": "^4.4.5"
   },
@@ -19,6 +21,9 @@
     "chroma-js": "^2.4.2",
     "crisp-game-lib": "^1.1.1",
     "pixi.js": "^7.4.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.22.1",
     "sounds-some-sounds": "^3.0.0"
   }
 }

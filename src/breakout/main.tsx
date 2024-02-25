@@ -1,6 +1,7 @@
 import * as PIXI from "pixi.js";
 import * as sss from "sounds-some-sounds";
 import chroma from "chroma-js";
+import { useEffect, useRef } from "react";
 
 const intersect = (a: PIXI.Rectangle, b: PIXI.Rectangle) => {
   return (
@@ -13,7 +14,6 @@ const intersect = (a: PIXI.Rectangle, b: PIXI.Rectangle) => {
 
 const main = () => {
   const app = new PIXI.Application({ width: 500, height: 500 });
-  document.body.appendChild(app.view as unknown as Node);
 
   const block = new PIXI.Graphics();
   block.beginFill(0x0000ff);
@@ -211,11 +211,25 @@ const main = () => {
       }
     }
   });
+
+  return app;
 };
 
-window.addEventListener("load", () => {
-  sss.init();
-  sss.setVolume(0.05);
+export default function Page() {
+  const ref = useRef<HTMLDivElement>(null);
 
-  main();
-});
+  useEffect(() => {
+    let app: PIXI.Application;
+    sss.init();
+    sss.setVolume(0.05);
+
+    app = main();
+    ref.current!.replaceChildren(app.view as unknown as Node);
+
+    return () => {
+      app.destroy();
+    };
+  }, []);
+
+  return <div ref={ref}></div>;
+}
