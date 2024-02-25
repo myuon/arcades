@@ -10,6 +10,8 @@
   },
   "devDependencies": {
     "@types/chroma-js": "^2.4.4",
+    "@types/node": "^20.11.20",
+    "fast-glob": "^3.3.2",
     "typescript": "^5.0.2",
     "vite": "^4.4.5"
   },
