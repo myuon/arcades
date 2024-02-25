@@ -2,7 +2,7 @@ import chroma from "chroma-js";
 import * as PIXI from "pixi.js";
 import { useEffect, useRef } from "react";
 import * as sss from "sounds-some-sounds";
-import { intersect } from "../utils/intersect";
+import { intersectRectWithLine } from "../utils/intersect";
 
 const main = () => {
   const app = new PIXI.Application({ width: 500, height: 500 });
@@ -156,6 +156,7 @@ const main = () => {
         return;
       }
 
+      const ballPrev = { x: ball.x, y: ball.y };
       ball.x += ballVelocity.x * delta;
       ball.y += ballVelocity.y * delta;
 
@@ -168,7 +169,11 @@ const main = () => {
         return;
       }
 
-      if (intersect(ball.getBounds(), bar.getBounds())) {
+      const ballIntersect = intersectRectWithLine(bar.getBounds(), [
+        new PIXI.Point(ballPrev.x, ballPrev.y),
+        new PIXI.Point(ball.x, ball.y),
+      ]);
+      if (ballIntersect) {
         const barCenter = bar.x + bar.width / 2;
         const hitRate = (ball.x - barCenter) / (bar.width / 2);
 
@@ -197,7 +202,11 @@ const main = () => {
       }
 
       for (let i = 0; i < blocks.length; i++) {
-        if (intersect(ball.getBounds(), blocks[i].getBounds())) {
+        const blockIntesect = intersectRectWithLine(blocks[i].getBounds(), [
+          new PIXI.Point(ballPrev.x, ballPrev.y),
+          new PIXI.Point(ball.x, ball.y),
+        ]);
+        if (blockIntesect) {
           ballVelocity.y *= -1;
           app.stage.removeChild(blocks[i]);
           blocks.splice(i, 1);

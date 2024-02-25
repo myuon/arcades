@@ -1,14 +1,5 @@
 import * as PIXI from "pixi.js";
 
-export const intersect = (a: PIXI.Rectangle, b: PIXI.Rectangle) => {
-  return (
-    a.x + a.width > b.x &&
-    a.x < b.x + b.width &&
-    a.y + a.height > b.y &&
-    a.y < b.y + b.height
-  );
-};
-
 export const intesectLines = (
   a: [PIXI.Point, PIXI.Point],
   b: [PIXI.Point, PIXI.Point],
@@ -67,4 +58,55 @@ export const intersectRectWithLine = (
   }
 
   return point;
+};
+
+export const intersectRectWithLineEdge = (
+  rect: PIXI.Rectangle,
+  line: [PIXI.Point, PIXI.Point],
+):
+  | {
+      point: PIXI.Point;
+      edge: [PIXI.Point, PIXI.Point];
+    }
+  | undefined => {
+  const lines = [
+    [
+      new PIXI.Point(rect.x, rect.y),
+      new PIXI.Point(rect.x + rect.width, rect.y),
+    ],
+    [
+      new PIXI.Point(rect.x + rect.width, rect.y),
+      new PIXI.Point(rect.x + rect.width, rect.y + rect.height),
+    ],
+    [
+      new PIXI.Point(rect.x + rect.width, rect.y + rect.height),
+      new PIXI.Point(rect.x, rect.y + rect.height),
+    ],
+    [
+      new PIXI.Point(rect.x, rect.y + rect.height),
+      new PIXI.Point(rect.x, rect.y),
+    ],
+  ] as [PIXI.Point, PIXI.Point][];
+
+  let point: PIXI.Point | undefined;
+  let edge: [PIXI.Point, PIXI.Point] | undefined;
+  let distance = Infinity;
+  for (const l of lines) {
+    const p = intesectLines(l, line);
+    if (p) {
+      const d = (p.x - line[0].x) ** 2 + (p.y - line[0].y) ** 2;
+      if (d < distance) {
+        distance = d;
+        point = p;
+        edge = l;
+      }
+    }
+  }
+
+  return point && edge
+    ? {
+        point,
+        edge,
+      }
+    : undefined;
 };

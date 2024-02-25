@@ -1,6 +1,7 @@
 import * as PIXI from "pixi.js";
 import { useEffect, useRef } from "react";
-import { intersectRectWithLine } from "../utils/intersect";
+import { flipByLine } from "../utils/flip";
+import { intersectRectWithLineEdge } from "../utils/intersect";
 
 const main = () => {
   const app = new PIXI.Application({ width: 500, height: 500 });
@@ -59,19 +60,24 @@ const main = () => {
     lightray.moveTo(light.x + light.width / 2, light.y + light.height / 2);
     lightray.lineTo(e.global.x, e.global.y);
 
-    const p = intersectRectWithLine(wall.getBounds(), [
+    const result = intersectRectWithLineEdge(wall.getBounds(), [
       new PIXI.Point(light.x + light.width / 2, light.y + light.height / 2),
       new PIXI.Point(e.global.x, e.global.y),
     ]);
 
-    if (p) {
+    if (result) {
       wall.clear();
       wall.beginFill(0x00ff00);
       wall.drawRect(0, 0, 200, 200);
       wall.endFill();
 
       intesectPoint.visible = true;
-      intesectPoint.position.copyFrom(p);
+      intesectPoint.position.copyFrom(result.point);
+
+      lightray.lineStyle(2, 0x999900);
+      lightray.moveTo(result.point.x, result.point.y);
+      const target = flipByLine(e.global, result.edge);
+      lightray.lineTo(target.x, target.y);
     } else {
       wall.clear();
       wall.beginFill(0x0099ff);
