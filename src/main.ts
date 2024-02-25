@@ -177,9 +177,13 @@ const main = () => {
         const barCenter = bar.x + bar.width / 2;
         const hitRate = (ball.x - barCenter) / (bar.width / 2);
 
-        ballVelocity.x = 6 * hitRate;
-        ballVelocity.y = -Math.sqrt(36 - ballVelocity.x ** 2);
-        sss.play("coin");
+        if (-1 < hitRate && hitRate < 1) {
+          ballVelocity.x = 6 * hitRate;
+          ballVelocity.y = -Math.sqrt(36 - ballVelocity.x ** 2);
+        } else {
+          ballVelocity.y *= -1;
+        }
+        sss.playSoundEffect("laser");
         return;
       }
 
@@ -202,7 +206,7 @@ const main = () => {
           ballVelocity.y *= -1;
           app.stage.removeChild(blocks[i]);
           blocks.splice(i, 1);
-          sss.playSoundEffect("laser");
+          sss.playSoundEffect("hit");
         }
       }
     }
@@ -211,6 +215,7 @@ const main = () => {
 
 window.addEventListener("load", () => {
   sss.init();
+  sss.setVolume(0.05);
 
   main();
 });
