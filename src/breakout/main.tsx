@@ -2,7 +2,11 @@ import chroma from "chroma-js";
 import * as PIXI from "pixi.js";
 import { useEffect, useRef } from "react";
 import * as sss from "sounds-some-sounds";
-import { intersectRectWithLine } from "../utils/intersect";
+import { flipByLine } from "../utils/flip";
+import {
+  intersectRectWithLine,
+  intersectRectWithLineEdge,
+} from "../utils/intersect";
 
 const main = () => {
   const app = new PIXI.Application({ width: 500, height: 500 });
@@ -68,9 +72,10 @@ const main = () => {
   ball.y = bar.y - 25;
   app.stage.addChild(ball);
 
+  const ballSpeed = 6;
   const ballVelocityInitial = {
-    x: 6 * Math.cos(-Math.PI / 4),
-    y: 6 * Math.sin(-Math.PI / 4),
+    x: ballSpeed * Math.cos(-Math.PI / 4),
+    y: ballSpeed * Math.sin(-Math.PI / 4),
   };
   let ballVelocity = { ...ballVelocityInitial };
 
@@ -162,10 +167,12 @@ const main = () => {
 
       if (ball.x <= 0 || ball.x >= 500) {
         ballVelocity.x *= -1;
+        ball.x = Math.max(0, Math.min(500, ball.x));
         return;
       }
       if (ball.y <= 0) {
         ballVelocity.y *= -1;
+        ball.y = Math.max(0, Math.min(500, ball.y));
         return;
       }
 
@@ -202,12 +209,25 @@ const main = () => {
       }
 
       for (let i = 0; i < blocks.length; i++) {
-        const blockIntesect = intersectRectWithLine(blocks[i].getBounds(), [
-          new PIXI.Point(ballPrev.x, ballPrev.y),
-          new PIXI.Point(ball.x, ball.y),
-        ]);
-        if (blockIntesect) {
-          ballVelocity.y *= -1;
+        const blockIntersectResult = intersectRectWithLineEdge(
+          blocks[i].getBounds(),
+          [
+            new PIXI.Point(ballPrev.x, ballPrev.y),
+            new PIXI.Point(ball.x, ball.y),
+          ],
+        );
+        if (blockIntersectResult) {
+          const flippedPoint = flipByLine(
+            new PIXI.Point(ball.x, ball.y),
+            blockIntersectResult.edge,
+          );
+          const newVelocityAngle = Math.atan2(
+            flippedPoint.y - blockIntersectResult.point.y,
+            flippedPoint.x - blockIntersectResult.point.x,
+          );
+          ballVelocity.x = ballSpeed * Math.cos(newVelocityAngle);
+          ballVelocity.y = ballSpeed * Math.sin(newVelocityAngle);
+
           app.stage.removeChild(blocks[i]);
           blocks.splice(i, 1);
           sss.playSoundEffect("hit");
