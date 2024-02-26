@@ -7,6 +7,9 @@ export default function Page() {
         <Link to="/breakout">Breakout</Link>
       </li>
       <li>
+        <Link to="/rains">Rains</Link>
+      </li>
+      <li>
         <Link to="/intersect">Intersect Demo</Link>
       </li>
     </ul>

@@ -5,6 +5,7 @@ import Breakout from "./breakout/main";
 import Intersect from "./intersect/main";
 import RootLayout from "./layout";
 import RootPage from "./page";
+import Rains from "./rains/main";
 
 const router = createBrowserRouter([
   {
@@ -23,6 +24,10 @@ const router = createBrowserRouter([
       {
         path: "/intersect",
         element: <Intersect />,
+      },
+      {
+        path: "/rains",
+        element: <Rains />,
       },
     ],
   },
