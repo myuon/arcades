@@ -73,11 +73,11 @@ const main = () => {
   app.stage.addChild(ball);
 
   const ballSpeed = 6;
-  const ballVelocityInitial = {
-    x: ballSpeed * Math.cos(-Math.PI / 4),
-    y: ballSpeed * Math.sin(-Math.PI / 4),
-  };
-  let ballVelocity = { ...ballVelocityInitial };
+  const getBallVelocityInitial = () => ({
+    x: ballSpeed * Math.cos((Math.random() * Math.PI) / 2 + Math.PI / 4),
+    y: -ballSpeed * Math.sin((Math.random() * Math.PI) / 2 + Math.PI / 4),
+  });
+  let ballVelocity = { ...getBallVelocityInitial() };
 
   let mode = "start";
 
@@ -131,7 +131,7 @@ const main = () => {
   app.stage.on("pointerdown", () => {
     if (mode === "start") {
       sss.play("start");
-      sss.playBgm();
+      sss.playBgm("breakout");
       mode = "play";
       app.stage.removeChild(startScreenTextH1);
       app.stage.removeChild(startScreenTextH2);
@@ -200,7 +200,7 @@ const main = () => {
         ball.x = 250;
         ball.y = bar.y - 25;
 
-        ballVelocity = { ...ballVelocityInitial };
+        ballVelocity = { ...getBallVelocityInitial() };
 
         sss.play("gameover");
         sss.stopBgm();

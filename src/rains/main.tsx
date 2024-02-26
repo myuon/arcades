@@ -188,7 +188,7 @@ const main = () => {
             raindrop.graphics.drawRect(0, 0, 2, 25);
             raindrop.graphics.endFill();
 
-            sss.playSoundEffect("laser");
+            sss.playSoundEffect("hit");
           }
 
           if (Math.random() < 0.35) {
