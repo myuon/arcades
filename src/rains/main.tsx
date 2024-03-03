@@ -5,6 +5,41 @@ import { intersectRectWithLine } from "../utils/intersect";
 
 const keys: { [key: string]: boolean } = {};
 
+const characterGraphicsL = [
+  " l  l  ",
+  " lllll ",
+  "l     l",
+  "l l   l",
+  "l     l",
+  " lllll",
+  " l  l",
+];
+const characterGraphicsR = [
+  "  l  l ",
+  " lllll ",
+  "l     l",
+  "l   l l",
+  "l     l",
+  " lllll",
+  "  l  l",
+];
+const createGraphics = (parts: string[]) => {
+  const graphics = new PIXI.Graphics();
+  const cellSize = 28 / parts.length;
+
+  for (let y = 0; y < parts.length; y++) {
+    for (let x = 0; x < parts[y].length; x++) {
+      if (parts[y][x] === "l") {
+        graphics.beginFill(0xff99ff);
+        graphics.drawRect(x * cellSize, y * cellSize, cellSize, cellSize);
+        graphics.endFill();
+      }
+    }
+  }
+
+  return graphics;
+};
+
 const main = () => {
   const canvasSize = { width: 500, height: 500 };
   const groundY = 380;
@@ -17,10 +52,14 @@ const main = () => {
 
   let mode: "start" | "play" | "gameover" = "start";
 
-  const character = new PIXI.Graphics();
-  character.beginFill(0xff0000);
-  character.drawRect(0, 0, 25, 25);
-  character.endFill();
+  const characterL = app.renderer.generateTexture(
+    createGraphics(characterGraphicsL),
+  );
+  const characterR = app.renderer.generateTexture(
+    createGraphics(characterGraphicsR),
+  );
+
+  const character = new PIXI.Sprite(characterL);
   character.x = 250 - character.width / 2;
   character.y = groundY - character.height;
 
@@ -135,8 +174,10 @@ const main = () => {
 
       if (keys.ArrowLeft) {
         character.x -= 5;
+        character.texture = characterL;
       } else if (keys.ArrowRight) {
         character.x += 5;
+        character.texture = characterR;
       }
 
       character.x = Math.max(
