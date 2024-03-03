@@ -1,6 +1,7 @@
 import * as PIXI from "pixi.js";
 import { useEffect, useRef } from "react";
 import * as sss from "sounds-some-sounds";
+import { arrangeHorizontal, asContainer, centerize } from "../utils/container";
 import { intersectRectWithLine } from "../utils/intersect";
 
 const keys: { [key: string]: boolean } = {};
@@ -75,43 +76,41 @@ const main = () => {
 
   let elapsed = 0.0;
 
-  const startScreenTextH1 = new PIXI.Text("RAINS", {
-    fontFamily: "serif",
-    fontSize: 64,
-    fill: 0xffffff,
-    stroke: 0x0044ff,
-  });
-  startScreenTextH1.x = 250 - startScreenTextH1.width / 2;
-  startScreenTextH1.y = 250 - startScreenTextH1.height / 2;
-  app.stage.addChild(startScreenTextH1);
+  const gameStartLayer = asContainer(
+    new PIXI.Text("RAINS", {
+      fontFamily: "serif",
+      fontSize: 64,
+      fill: 0xffffff,
+      stroke: 0x0044ff,
+    }),
+    new PIXI.Text("ARROW KEYS TO MOVE", {
+      fontFamily: "serif",
+      fontSize: 24,
+      fill: 0xffffff,
+      stroke: 0x0044ff,
+    }),
+  );
+  app.stage.addChild(gameStartLayer);
 
-  const startScreenTextH2 = new PIXI.Text("ARROW KEYS TO MOVE", {
-    fontFamily: "serif",
-    fontSize: 24,
-    fill: 0xffffff,
-    stroke: 0x0044ff,
-  });
-  startScreenTextH2.x = 250 - startScreenTextH2.width / 2;
-  startScreenTextH2.y = 250 + startScreenTextH1.height / 2;
-  app.stage.addChild(startScreenTextH2);
+  arrangeHorizontal(gameStartLayer, { gap: 8, align: "center" });
+  centerize(gameStartLayer, canvasSize);
 
-  const gameoverTextH1 = new PIXI.Text("GAME OVER", {
-    fontFamily: "serif",
-    fontSize: 64,
-    fill: 0xffffff,
-    stroke: 0x0044ff,
-  });
-  gameoverTextH1.x = 250 - gameoverTextH1.width / 2;
-  gameoverTextH1.y = 250 - gameoverTextH1.height / 2;
-
-  const gameoverTextH2 = new PIXI.Text("PRESS ENTER TO RESTART", {
-    fontFamily: "serif",
-    fontSize: 24,
-    fill: 0xffffff,
-    stroke: 0x0044ff,
-  });
-  gameoverTextH2.x = 250 - gameoverTextH2.width / 2;
-  gameoverTextH2.y = 250 + gameoverTextH1.height / 2;
+  const gameOverLayer = asContainer(
+    new PIXI.Text("GAME OVER", {
+      fontFamily: "serif",
+      fontSize: 64,
+      fill: 0xffffff,
+      stroke: 0x0044ff,
+    }),
+    new PIXI.Text("PRESS ENTER TO RESTART", {
+      fontFamily: "serif",
+      fontSize: 24,
+      fill: 0xffffff,
+      stroke: 0x0044ff,
+    }),
+  );
+  arrangeHorizontal(gameOverLayer, { gap: 8, align: "center" });
+  centerize(gameOverLayer, canvasSize);
 
   const scoreText = new PIXI.Text("SCORE: 0", {
     fontFamily: "serif",
@@ -146,8 +145,7 @@ const main = () => {
       if (keys.ArrowLeft || keys.ArrowRight) {
         mode = "play";
 
-        app.stage.removeChild(startScreenTextH1);
-        app.stage.removeChild(startScreenTextH2);
+        app.stage.removeChild(gameStartLayer);
 
         sss.playBgm("RAINS");
       }
@@ -208,8 +206,7 @@ const main = () => {
           intersectRectWithLine(character.getBounds().pad(-5), raindropPath)
         ) {
           mode = "gameover";
-          app.stage.addChild(gameoverTextH1);
-          app.stage.addChild(gameoverTextH2);
+          app.stage.addChild(gameOverLayer);
 
           sss.play("gameover");
           sss.stopBgm();
@@ -268,8 +265,7 @@ const main = () => {
       if (keys.Enter) {
         mode = "start";
 
-        app.stage.removeChild(gameoverTextH1);
-        app.stage.removeChild(gameoverTextH2);
+        app.stage.removeChild(gameOverLayer);
 
         character.x = 250 - character.width / 2;
         score = 0;
@@ -282,8 +278,8 @@ const main = () => {
           app.stage.removeChild(particle.graphics);
         }
         particles = [];
-        app.stage.addChild(startScreenTextH1);
-        app.stage.addChild(startScreenTextH2);
+
+        app.stage.addChild(gameStartLayer);
       }
     }
   });
