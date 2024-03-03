@@ -2,16 +2,26 @@ import { Link } from "react-router-dom";
 
 export default function Page() {
   return (
-    <ul>
-      <li>
-        <Link to="/breakout">Breakout</Link>
-      </li>
-      <li>
-        <Link to="/rains">Rains</Link>
-      </li>
-      <li>
-        <Link to="/intersect">Intersect Demo</Link>
-      </li>
-    </ul>
+    <>
+      <p>Games</p>
+      <ul>
+        <li>
+          <Link to="/breakout">Breakout</Link>
+        </li>
+        <li>
+          <Link to="/rains">Rains</Link>
+        </li>
+        <li>
+          <Link to="/bullets">Bullets</Link>
+        </li>
+      </ul>
+
+      <p>Others</p>
+      <ul>
+        <li>
+          <Link to="/intersect">Intersect Demo</Link>
+        </li>
+      </ul>
+    </>
   );
 }
