@@ -1,7 +1,14 @@
 import * as PIXI from "pixi.js";
 import { useEffect, useRef } from "react";
 import * as sss from "sounds-some-sounds";
-import { arrangeHorizontal, asContainer, centerize } from "../utils/container";
+import {
+  arrangeHorizontal,
+  asContainer,
+  centerize,
+  position,
+} from "../utils/container";
+import { createGraphics } from "../utils/graphics";
+import { normalize, scale } from "../utils/vector";
 
 const keys: { [key: string]: boolean } = {};
 const keysPressing: { [key: string]: number } = {};
@@ -32,6 +39,12 @@ const main = () => {
       fill: 0xffffff,
       stroke: 0x0044ff,
     }),
+    new PIXI.Text("Press SPACE to Start", {
+      fontFamily: "serif",
+      fontSize: 28,
+      fill: 0xffffff,
+      stroke: 0x0044ff,
+    }),
   );
   app.stage.addChild(gameStartLayer);
 
@@ -42,9 +55,28 @@ const main = () => {
 
   const stages = [{}, {}, {}, {}, {}, {}];
 
+  const character = createGraphics(["l"]);
+  const enemy = createGraphics(["l"], 0xff0000);
+  const bullet = createGraphics(
+    [" lll ", "lllll", "lllll", " lll "],
+    0xffffff,
+    8,
+  );
+
+  let frames = 0;
+
+  const bullets: { graphics: PIXI.Graphics; velocity: PIXI.Point }[] = [];
+  const updateBullets = () => {
+    for (const b of bullets) {
+      b.graphics.x += b.velocity.x;
+      b.graphics.y += b.velocity.y;
+    }
+  };
+
   app.ticker.add((delta) => {
     sss.update();
     elapsed += delta;
+    frames += 1;
 
     for (const key in keys) {
       keysPressing[key] = keys[key] ? (keysPressing[key] ?? 0) + 1 : 0;
@@ -62,14 +94,54 @@ const main = () => {
           stage + 1
         } →`;
       }
-      if (keys.ArrowEnter) {
+      if (keys[" "]) {
         mode = "play";
 
         app.stage.removeChild(gameStartLayer);
 
-        sss.playBgm("RAINS");
+        sss.playBgm(`BULLETS ${stage + 1}`);
+
+        app.stage.addChild(character);
+        position(character, canvasSize, { bottom: 20, centerX: true });
+
+        app.stage.addChild(enemy);
+        position(enemy, canvasSize, { top: 20, centerX: true });
       }
     } else if (mode === "play") {
+      if (keys.ArrowLeft) {
+        character.x -= 3;
+      }
+      if (keys.ArrowRight) {
+        character.x += 3;
+      }
+      if (keys.ArrowUp) {
+        character.y -= 3;
+      }
+      if (keys.ArrowDown) {
+        character.y += 3;
+      }
+
+      character.x = Math.max(0, Math.min(500 - character.width, character.x));
+      character.y = Math.max(0, Math.min(500 - character.height, character.y));
+
+      if (frames % 30 === 0) {
+        const b = bullet.clone();
+        b.x = enemy.x + enemy.width / 2 - b.width / 2;
+        b.y = enemy.y + enemy.height / 2 - b.height / 2;
+
+        bullets.push({
+          graphics: b,
+          velocity: scale(
+            normalize(
+              new PIXI.Point(character.x - enemy.x, character.y - enemy.y),
+            ),
+            3,
+          ),
+        });
+        app.stage.addChild(b);
+      }
+
+      updateBullets();
     } else if (mode === "gameover") {
     }
   });
