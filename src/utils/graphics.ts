@@ -20,3 +20,10 @@ export const createGraphics = (
 
   return graphics;
 };
+
+export const centerOf = (graphics: PIXI.Graphics) => {
+  return new PIXI.Point(
+    graphics.x + graphics.width / 2,
+    graphics.y + graphics.height / 2,
+  );
+};

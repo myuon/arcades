@@ -51,11 +51,28 @@ const main = () => {
   arrangeHorizontal(gameStartLayer, { gap: 8, align: "center" });
   centerize(gameStartLayer, canvasSize);
 
+  const gameOverLayer = asContainer(
+    new PIXI.Text("GAME OVER", {
+      fontFamily: "serif",
+      fontSize: 64,
+      fill: 0xffffff,
+      stroke: 0x0044ff,
+    }),
+    new PIXI.Text("PRESS ENTER TO RESTART", {
+      fontFamily: "serif",
+      fontSize: 24,
+      fill: 0xffffff,
+      stroke: 0x0044ff,
+    }),
+  );
+  arrangeHorizontal(gameOverLayer, { gap: 8, align: "center" });
+  centerize(gameOverLayer, canvasSize);
+
   let stage = 0;
 
   const stages = [{}, {}, {}, {}, {}, {}];
 
-  const character = createGraphics(["l"]);
+  const character = createGraphics(["l"], undefined, 20);
   const enemy = createGraphics(["l"], 0xff0000);
   const bullet = createGraphics(
     [" lll ", "lllll", "lllll", " lll "],
@@ -65,11 +82,15 @@ const main = () => {
 
   let frames = 0;
 
-  const bullets: { graphics: PIXI.Graphics; velocity: PIXI.Point }[] = [];
+  let bullets: { graphics: PIXI.Graphics; velocity: PIXI.Point }[] = [];
   const updateBullets = () => {
     for (const b of bullets) {
       b.graphics.x += b.velocity.x;
       b.graphics.y += b.velocity.y;
+
+      if (!app.screen.contains(b.graphics.x, b.graphics.y)) {
+        app.stage.removeChild(b.graphics);
+      }
     }
   };
 
@@ -125,24 +146,57 @@ const main = () => {
       character.y = Math.max(0, Math.min(500 - character.height, character.y));
 
       if (frames % 30 === 0) {
-        const b = bullet.clone();
-        b.x = enemy.x + enemy.width / 2 - b.width / 2;
-        b.y = enemy.y + enemy.height / 2 - b.height / 2;
+        for (let i = 0; i < 360; i += 360 / 20) {
+          const b = bullet.clone();
+          b.x = enemy.x + enemy.width / 2 - b.width / 2;
+          b.y = enemy.y + enemy.height / 2 - b.height / 2;
 
-        bullets.push({
-          graphics: b,
-          velocity: scale(
-            normalize(
-              new PIXI.Point(character.x - enemy.x, character.y - enemy.y),
+          const angle = Math.atan2(character.y - b.y, character.x - b.x);
+
+          bullets.push({
+            graphics: b,
+            velocity: scale(
+              normalize(
+                new PIXI.Point(
+                  Math.cos(angle + (i * Math.PI) / 180),
+                  Math.sin(angle + (i * Math.PI) / 180),
+                ),
+              ),
+              4.5,
             ),
-            3,
-          ),
-        });
-        app.stage.addChild(b);
+          });
+          app.stage.addChild(b);
+        }
       }
 
       updateBullets();
+
+      for (const b of bullets) {
+        if (
+          (character.x - b.graphics.x) ** 2 +
+            (character.y - b.graphics.y) ** 2 <
+          (10 + 4) ** 2
+        ) {
+          mode = "gameover";
+          sss.stopBgm();
+
+          app.stage.addChild(gameOverLayer);
+        }
+      }
     } else if (mode === "gameover") {
+      if (keys.Enter) {
+        mode = "start";
+
+        app.stage.removeChild(gameOverLayer);
+
+        character.x = 250 - character.width / 2;
+        for (const b of bullets) {
+          app.stage.removeChild(b.graphics);
+        }
+        bullets = [];
+
+        app.stage.addChild(gameStartLayer);
+      }
     }
   });
 
