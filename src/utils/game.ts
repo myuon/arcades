@@ -22,6 +22,7 @@ export interface Entity {
     type: "none" | "waiting" | "appeal" | "done";
     exists: boolean;
     t: number;
+    variables: Record<string, unknown>;
   };
   effects: {
     appeal?: {
@@ -38,6 +39,9 @@ export interface Entity {
     };
   };
   plugins: ((game: Game, entity: Entity) => void)[];
+  hooks: {
+    onRender: (game: Game, entity: Entity) => void;
+  }[];
 }
 
 export const pluginMoveByArrowKeys =
@@ -130,6 +134,10 @@ export namespace Game {
 
       for (const p of l.plugins) {
         p(game, l);
+      }
+
+      for (const h of l.hooks) {
+        h.onRender(game, l);
       }
     }
   };

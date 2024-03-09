@@ -101,6 +101,7 @@ const main = () => {
           exists: false,
           type: "none",
           t: 0,
+          variables: {},
         },
         plugins: [
           pluginMoveByArrowKeys({
@@ -110,6 +111,7 @@ const main = () => {
               mode === "play" && entity.state.type === "done",
           }),
         ],
+        hooks: [],
       },
       {
         graphics: enemy,
@@ -131,15 +133,26 @@ const main = () => {
           exists: false,
           type: "none" as const,
           t: 0,
+          variables: {
+            frame: 0,
+          },
         },
         plugins: [],
+        hooks: [
+          {
+            onRender: (_game, entity) => {
+              if (mode === "play" && entity.state.type === "done") {
+                entity.state.variables.frame =
+                  (entity.state.variables.frame as number) + 1;
+              }
+            },
+          },
+        ],
       },
     ],
   };
 
   Game.render(game);
-
-  let frames = 0;
 
   let bullets: { graphics: PIXI.Graphics; velocity: PIXI.Point }[] = [];
   const updateBullets = () => {
@@ -156,8 +169,6 @@ const main = () => {
   const initPlay = () => {
     mode = "play";
 
-    frames = 0;
-
     app.stage.removeChild(gameStartLayer);
 
     sss.playBgm(`BULLETS ${stage + 1}`);
@@ -166,9 +177,6 @@ const main = () => {
   app.ticker.add((delta) => {
     sss.update();
     elapsed += delta;
-    if (game.entities[0].state.type === "done") {
-      frames += 1;
-    }
 
     for (const key in keys) {
       keysPressing[key] = keys[key] ? (keysPressing[key] ?? 0) + 1 : 0;
@@ -192,6 +200,8 @@ const main = () => {
         initPlay();
       }
     } else if (mode === "play") {
+      const frames = game.entities[1].state.variables.frame as number;
+
       if (0 < frames && frames < 800 && frames % 20 === 0) {
         for (let i = 0; i < 360; i += 360 / 20) {
           const b = bullet.clone();
