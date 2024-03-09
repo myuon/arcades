@@ -87,6 +87,30 @@ const main = () => {
       onRender: (_game: Game, _entity: Entity) => {
         if (mode === "play") {
           frame += 1;
+
+          if (frame % 20 === 0) {
+            for (let i = 0; i < 360; i += 360 / 20) {
+              const b = bullet.clone();
+              b.x = enemy.x + enemy.width / 2 - b.width / 2;
+              b.y = enemy.y + enemy.height / 2 - b.height / 2;
+
+              const angle = Math.atan2(character.y - b.y, character.x - b.x);
+
+              bullets.push({
+                graphics: b,
+                velocity: scale(
+                  normalize(
+                    new PIXI.Point(
+                      Math.cos(angle + (i * Math.PI) / 180),
+                      Math.sin(angle + (i * Math.PI) / 180),
+                    ),
+                  ),
+                  4.5,
+                ),
+              });
+              app.stage.addChild(b);
+            }
+          }
         }
       },
     };
@@ -187,76 +211,6 @@ const main = () => {
         initPlay();
       }
     } else if (mode === "play") {
-      const frames = 0;
-
-      if (0 < frames && frames < 800 && frames % 20 === 0) {
-        for (let i = 0; i < 360; i += 360 / 20) {
-          const b = bullet.clone();
-          b.x = enemy.x + enemy.width / 2 - b.width / 2;
-          b.y = enemy.y + enemy.height / 2 - b.height / 2;
-
-          const angle = Math.atan2(character.y - b.y, character.x - b.x);
-
-          bullets.push({
-            graphics: b,
-            velocity: scale(
-              normalize(
-                new PIXI.Point(
-                  Math.cos(angle + (i * Math.PI) / 180),
-                  Math.sin(angle + (i * Math.PI) / 180),
-                ),
-              ),
-              4.5,
-            ),
-          });
-          app.stage.addChild(b);
-        }
-      } else if (1000 < frames && frames < 1800 && frames % 20 === 0) {
-        for (let i = 0; i < 360; i += 360 / 10) {
-          const b = bullet.clone();
-          b.x = enemy.x + enemy.width / 2 - b.width / 2;
-          b.y = enemy.y + enemy.height / 2 - b.height / 2;
-
-          const angle = Math.atan2(character.y - b.y, character.x - b.x);
-
-          bullets.push({
-            graphics: b,
-            velocity: scale(
-              normalize(
-                new PIXI.Point(
-                  Math.cos(angle + (i * Math.PI) / 180),
-                  Math.sin(angle + (i * Math.PI) / 180),
-                ),
-              ),
-              4.5,
-            ),
-          });
-          app.stage.addChild(b);
-        }
-      } else if (2000 < frames && frames < 2800 && frames % 10 === 0) {
-        for (let i = 0; i < 360; i += 360 / 5) {
-          const b = bullet.clone();
-          b.x = enemy.x + enemy.width / 2 - b.width / 2;
-          b.y = enemy.y + enemy.height / 2 - b.height / 2;
-
-          const angle = Math.atan2(character.y - b.y, character.x - b.x);
-
-          bullets.push({
-            graphics: b,
-            velocity: scale(
-              normalize(
-                new PIXI.Point(
-                  Math.cos(angle + (i * Math.PI) / 180),
-                  Math.sin(angle + (i * Math.PI) / 180),
-                ),
-              ),
-              4.5,
-            ),
-          });
-          app.stage.addChild(b);
-        }
-      }
-
       updateBullets();
 
       for (const b of bullets) {
