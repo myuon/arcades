@@ -2,7 +2,12 @@ import * as PIXI from "pixi.js";
 import { useEffect, useRef } from "react";
 import * as sss from "sounds-some-sounds";
 import { arrangeHorizontal, asContainer, centerize } from "../utils/container";
-import { Game, pluginMoveByArrowKeys } from "../utils/game";
+import {
+  Entity,
+  Game,
+  pluginAppealEffect,
+  pluginMoveByArrowKeys,
+} from "../utils/game";
 import { createGraphics } from "../utils/graphics";
 import { normalize, scale } from "../utils/vector";
 
@@ -19,8 +24,6 @@ const main = () => {
   app.stage.hitArea = app.screen;
 
   let mode: "start" | "play" | "gameover" = "start";
-
-  let elapsed = 0.0;
 
   const gameStartLayer = asContainer(
     new PIXI.Text("Bullets", {
@@ -76,81 +79,65 @@ const main = () => {
     8,
   );
 
+  const pluginEnemy = () => {
+    let frame = 0;
+
+    return {
+      name: "enemy",
+      onRender: (_game: Game, entity: Entity) => {
+        if (mode === "play" && entity.state.type === "done") {
+          frame += 1;
+        }
+      },
+    };
+  };
+
   const game: Game = {
     keys,
     app,
     canvasSize,
-    entities: [
-      {
-        graphics: character,
-        position: {
-          bottom: 20,
-          centerX: true,
-        },
-        effects: {
-          appeal: {
-            type: "move",
-            from: {
-              bottom: -20,
-              centerX: true,
-            },
-            start: () => mode === "play",
-          },
-        },
-        state: {
-          exists: false,
-          type: "none",
-          t: 0,
-          variables: {},
-        },
-        plugins: [
-          pluginMoveByArrowKeys({
-            speed: 3,
-            clampedBy: canvasSize,
-            condition: (entity) =>
-              mode === "play" && entity.state.type === "done",
-          }),
-        ],
-        hooks: [],
-      },
-      {
-        graphics: enemy,
-        position: {
-          top: 20,
-          centerX: true,
-        },
-        effects: {
-          appeal: {
-            type: "move",
-            from: {
-              top: -40,
-              centerX: true,
-            },
-            start: () => mode === "play",
-          },
-        },
-        state: {
-          exists: false,
-          type: "none" as const,
-          t: 0,
-          variables: {
-            frame: 0,
-          },
-        },
-        plugins: [],
-        hooks: [
-          {
-            onRender: (_game, entity) => {
-              if (mode === "play" && entity.state.type === "done") {
-                entity.state.variables.frame =
-                  (entity.state.variables.frame as number) + 1;
-              }
-            },
-          },
-        ],
-      },
-    ],
+    entities: [],
   };
+
+  Game.register(game, {
+    graphics: character,
+    position: {
+      bottom: 20,
+      centerX: true,
+    },
+    plugins: [
+      pluginMoveByArrowKeys({
+        speed: 3,
+        clampedBy: canvasSize,
+        condition: (entity) => mode === "play" && entity.state.type === "done",
+      }),
+      pluginAppealEffect({
+        from: {
+          bottom: -20,
+          centerX: true,
+        },
+        start: () => mode === "play",
+      }),
+    ],
+  });
+
+  Game.register(game, {
+    graphics: enemy,
+    position: {
+      top: 20,
+      centerX: true,
+    },
+    plugins: [
+      pluginAppealEffect({
+        from: {
+          top: -40,
+          centerX: true,
+        },
+        start: () => mode === "play",
+      }),
+      pluginEnemy(),
+    ],
+  });
 
   Game.render(game);
 
@@ -174,9 +161,8 @@ const main = () => {
     sss.playBgm(`BULLETS ${stage + 1}`);
   };
 
-  app.ticker.add((delta) => {
+  app.ticker.add(() => {
     sss.update();
-    elapsed += delta;
 
     for (const key in keys) {
       keysPressing[key] = keys[key] ? (keysPressing[key] ?? 0) + 1 : 0;
