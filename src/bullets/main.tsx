@@ -94,6 +94,22 @@ const main = () => {
     }
   };
 
+  const initPlay = () => {
+    mode = "play";
+
+    frames = 0;
+
+    app.stage.removeChild(gameStartLayer);
+
+    sss.playBgm(`BULLETS ${stage + 1}`);
+
+    app.stage.addChild(character);
+    position(character, canvasSize, { bottom: 20, centerX: true });
+
+    app.stage.addChild(enemy);
+    position(enemy, canvasSize, { top: 20, centerX: true });
+  };
+
   app.ticker.add((delta) => {
     sss.update();
     elapsed += delta;
@@ -116,17 +132,7 @@ const main = () => {
         } →`;
       }
       if (keys[" "]) {
-        mode = "play";
-
-        app.stage.removeChild(gameStartLayer);
-
-        sss.playBgm(`BULLETS ${stage + 1}`);
-
-        app.stage.addChild(character);
-        position(character, canvasSize, { bottom: 20, centerX: true });
-
-        app.stage.addChild(enemy);
-        position(enemy, canvasSize, { top: 20, centerX: true });
+        initPlay();
       }
     } else if (mode === "play") {
       if (keys.ArrowLeft) {
@@ -223,6 +229,7 @@ const main = () => {
         ) {
           mode = "gameover";
           sss.stopBgm();
+          sss.playSoundEffect("explosion");
 
           app.stage.addChild(gameOverLayer);
         }
