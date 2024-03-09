@@ -11,6 +11,83 @@ import {
 import { createGraphics } from "../utils/graphics";
 import { normalize, scale } from "../utils/vector";
 
+interface Entity {
+  graphics: PIXI.Graphics;
+  position: {
+    left?: number;
+    right?: number;
+    top?: number;
+    bottom?: number;
+    centerX?: boolean;
+    centerY?: boolean;
+  };
+  state: {
+    type: "none" | "waiting" | "appeal" | "done";
+    exists: boolean;
+    t: number;
+  };
+  effects: {
+    appeal?: {
+      type: "move";
+      from: {
+        left?: number;
+        right?: number;
+        top?: number;
+        bottom?: number;
+        centerX?: boolean;
+        centerY?: boolean;
+      };
+      start?: () => boolean;
+    };
+  };
+  plugins: ((entity: Entity) => void)[];
+}
+
+const pluginMoveByArrowKeys =
+  (options: {
+    speed: number;
+    clampedBy?: {
+      width: number;
+      height: number;
+    };
+    condition?: (entity: Entity) => boolean;
+  }) =>
+  (entity: Entity) => {
+    if (options.condition && !options.condition(entity)) {
+      return;
+    }
+
+    if (keys.ArrowLeft) {
+      entity.graphics.x -= options.speed;
+    }
+    if (keys.ArrowRight) {
+      entity.graphics.x += options.speed;
+    }
+    if (keys.ArrowUp) {
+      entity.graphics.y -= options.speed;
+    }
+    if (keys.ArrowDown) {
+      entity.graphics.y += options.speed;
+    }
+
+    if (options.clampedBy) {
+      entity.graphics.x = Math.max(
+        0,
+        Math.min(
+          options.clampedBy.width - entity.graphics.width,
+          entity.graphics.x,
+        ),
+      );
+      entity.graphics.y = Math.max(
+        0,
+        Math.min(
+          options.clampedBy.height - entity.graphics.height,
+          entity.graphics.y,
+        ),
+      );
+    }
+  };
+
 const keys: { [key: string]: boolean } = {};
 const keysPressing: { [key: string]: number } = {};
 
@@ -81,7 +158,7 @@ const main = () => {
     8,
   );
 
-  const entities = [
+  const entities: Entity[] = [
     {
       graphics: character,
       position: {
@@ -103,6 +180,14 @@ const main = () => {
         type: "none",
         t: 0,
       },
+      plugins: [
+        pluginMoveByArrowKeys({
+          speed: 3,
+          clampedBy: canvasSize,
+          condition: (entity) =>
+            mode === "play" && entity.state.type === "done",
+        }),
+      ],
     },
     {
       graphics: enemy,
@@ -122,9 +207,10 @@ const main = () => {
       },
       state: {
         exists: false,
-        type: "none",
+        type: "none" as const,
         t: 0,
       },
+      plugins: [],
     },
   ];
   const render = () => {
@@ -143,13 +229,13 @@ const main = () => {
       }
 
       if (l.state.type === "waiting") {
-        if (l.effects.appeal.start?.()) {
+        if (l.effects.appeal?.start?.()) {
           l.state.type = "appeal";
           l.state.t = 0;
         }
       }
 
-      if (l.state.type === "appeal") {
+      if (l.state.type === "appeal" && l.effects.appeal) {
         l.state.t += 1 / 30;
         positionInterpolated(
           l.graphics,
@@ -167,6 +253,10 @@ const main = () => {
         if (l.state.t >= 1) {
           l.state.type = "done";
         }
+      }
+
+      for (const p of l.plugins) {
+        p(l);
       }
     }
   };
@@ -225,22 +315,6 @@ const main = () => {
         initPlay();
       }
     } else if (mode === "play") {
-      if (keys.ArrowLeft) {
-        character.x -= 3;
-      }
-      if (keys.ArrowRight) {
-        character.x += 3;
-      }
-      if (keys.ArrowUp) {
-        character.y -= 3;
-      }
-      if (keys.ArrowDown) {
-        character.y += 3;
-      }
-
-      character.x = Math.max(0, Math.min(500 - character.width, character.x));
-      character.y = Math.max(0, Math.min(500 - character.height, character.y));
-
       if (0 < frames && frames < 800 && frames % 20 === 0) {
         for (let i = 0; i < 360; i += 360 / 20) {
           const b = bullet.clone();
