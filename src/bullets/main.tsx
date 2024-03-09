@@ -124,7 +124,7 @@ const main = () => {
     eventQueue: [],
   };
 
-  Game.register(game, {
+  const characterEntity = Game.entity({
     graphics: character,
     position: {
       bottom: 20,
@@ -145,8 +145,7 @@ const main = () => {
       }),
     ],
   });
-
-  Game.register(game, {
+  const enemyEntity = Game.entity({
     graphics: enemy,
     position: {
       top: 20,
@@ -163,8 +162,6 @@ const main = () => {
       pluginEnemy(),
     ],
   });
-
-  Game.render(game);
 
   let bullets: { graphics: PIXI.Graphics; velocity: PIXI.Point }[] = [];
   const updateBullets = () => {
@@ -211,6 +208,8 @@ const main = () => {
         initPlay();
       }
     } else if (mode === "play") {
+      Game.declare(game, [characterEntity, enemyEntity]);
+
       updateBullets();
 
       for (const b of bullets) {

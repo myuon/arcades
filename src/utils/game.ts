@@ -144,16 +144,19 @@ export const pluginAppealEffect = (options: {
 };
 
 export namespace Game {
-  export const register = (
-    game: Game,
+  export const entity = (
     entity: Pick<Entity, "graphics" | "position" | "plugins">,
-  ) => {
-    game.entities.push({
+  ): Entity => {
+    return {
       id: nanoid(),
       graphics: entity.graphics,
       position: entity.position,
       plugins: [...entity.plugins],
-    });
+    };
+  };
+
+  export const register = (game: Game, entity: Entity) => {
+    game.entities.push(entity);
     position(entity.graphics, game.canvasSize, entity.position);
     game.app.stage.addChild(entity.graphics);
   };
@@ -190,5 +193,21 @@ export namespace Game {
 
   export const emit = (game: Game, event: GameEvent) => {
     game.eventQueue.push(event);
+  };
+
+  export const declare = (game: Game, entities: Entity[]) => {
+    for (const e of entities) {
+      if (game.entities.find((entity) => entity.id === e.id)) {
+        continue;
+      }
+
+      Game.register(game, e);
+    }
+
+    for (const e of game.entities) {
+      if (!entities.find((entity) => entity.id === e.id)) {
+        game.app.stage.removeChild(e.graphics);
+      }
+    }
   };
 }
