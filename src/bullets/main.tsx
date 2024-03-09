@@ -97,6 +97,7 @@ const main = () => {
     app,
     canvasSize,
     entities: [],
+    eventQueue: [],
   };
 
   Game.register(game, {
@@ -109,7 +110,7 @@ const main = () => {
       pluginMoveByArrowKeys({
         speed: 3,
         clampedBy: canvasSize,
-        condition: (entity) => mode === "play" && entity.state.type === "done",
+        condition: () => mode === "play",
       }),
       pluginAppealEffect({
         from: {

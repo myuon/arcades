@@ -1,14 +1,33 @@
+import { nanoid } from "nanoid";
 import * as PIXI from "pixi.js";
 import { position, positionInterpolated } from "./container";
+
+class GameEvent {
+  constructor(
+    public eventName: string,
+    public data: unknown,
+  ) {}
+}
+
+class RemovePluginEvent extends GameEvent {
+  constructor(
+    public pluginId: string,
+    public entityId: string,
+  ) {
+    super("removePlugin", { pluginId, entityId });
+  }
+}
 
 export interface Game {
   app: PIXI.Application;
   keys: { [key: string]: boolean };
   entities: Entity[];
   canvasSize: { width: number; height: number };
+  eventQueue: GameEvent[];
 }
 
 export interface Entity {
+  id: string;
   graphics: PIXI.Graphics;
   position: {
     left?: number;
@@ -42,7 +61,7 @@ export const pluginMoveByArrowKeys = (options: {
   return {
     name: "moveByArrowKeys",
     onRender: (game: Game, entity: Entity) => {
-      if (options.condition && !options.condition(entity)) {
+      if (!options.condition || !options.condition(entity)) {
         return;
       }
 
@@ -90,7 +109,6 @@ export const pluginAppealEffect = (options: {
   };
   start?: () => boolean;
 }) => {
-  let isDone = false;
   let t = 0;
 
   return {
@@ -110,10 +128,6 @@ export const pluginAppealEffect = (options: {
       );
     },
     onRender: (game: Game, entity: Entity) => {
-      if (isDone) {
-        return;
-      }
-
       t += 1 / 30;
       positionInterpolated(
         entity.graphics,
@@ -129,7 +143,7 @@ export const pluginAppealEffect = (options: {
       );
 
       if (t >= 1) {
-        isDone = true;
+        Game.emit(game, new RemovePluginEvent("appealEffect", entity.id));
       }
     },
   };
@@ -141,6 +155,7 @@ export namespace Game {
     entity: Pick<Entity, "graphics" | "position" | "plugins">,
   ) => {
     game.entities.push({
+      id: nanoid(),
       graphics: entity.graphics,
       position: entity.position,
       state: {
@@ -169,5 +184,23 @@ export namespace Game {
         p.onRender?.(game, l);
       }
     }
+
+    for (const ev of game.eventQueue) {
+      if (ev.eventName === "removePlugin") {
+        const event = ev as RemovePluginEvent;
+        const entityIndex = game.entities.findIndex(
+          (e) => e.id === event.entityId,
+        );
+        game.entities[entityIndex].plugins = game.entities[
+          entityIndex
+        ].plugins.filter((p) => p.name !== event.pluginId);
+      }
+    }
+
+    game.eventQueue = [];
+  };
+
+  export const emit = (game: Game, event: GameEvent) => {
+    game.eventQueue.push(event);
   };
 }
