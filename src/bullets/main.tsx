@@ -6,6 +6,7 @@ import {
   asContainer,
   centerize,
   position,
+  positionInterpolated,
 } from "../utils/container";
 import { createGraphics } from "../utils/graphics";
 import { normalize, scale } from "../utils/vector";
@@ -80,6 +81,88 @@ const main = () => {
     8,
   );
 
+  const entities = [
+    {
+      graphics: character,
+      position: {
+        bottom: 20,
+        centerX: true,
+      },
+      effects: {
+        appeal: {
+          type: "move",
+          from: {
+            bottom: -20,
+            centerX: true,
+          },
+        },
+      },
+      state: {
+        exists: false,
+        type: "none",
+        t: 0,
+      },
+    },
+    {
+      graphics: enemy,
+      position: {
+        top: 20,
+        centerX: true,
+      },
+      effects: {
+        appeal: {
+          type: "move",
+          from: {
+            top: -20,
+            centerX: true,
+          },
+        },
+      },
+      state: {
+        exists: false,
+        type: "none",
+        t: 0,
+      },
+    },
+  ];
+  const render = () => {
+    for (const l of entities) {
+      if (!l.state.exists) {
+        position(l.graphics, canvasSize, l.position);
+        l.state.exists = true;
+        app.stage.addChild(l.graphics);
+
+        if (l.effects.appeal) {
+          if (l.effects.appeal.type === "move") {
+            position(l.graphics, canvasSize, l.effects.appeal.from);
+            l.state.type = "appeal";
+          }
+        }
+      }
+
+      if (l.state.type === "appeal") {
+        l.state.t += 1 / 30;
+        positionInterpolated(
+          l.graphics,
+          l.state.t,
+          {
+            containerSize: canvasSize,
+            layout: l.effects.appeal.from,
+          },
+          {
+            containerSize: canvasSize,
+            layout: l.position,
+          },
+        );
+
+        if (l.state.t >= 1) {
+          l.state.type = "none";
+        }
+      }
+    }
+  };
+  render();
+
   let frames = 0;
 
   let bullets: { graphics: PIXI.Graphics; velocity: PIXI.Point }[] = [];
@@ -102,12 +185,6 @@ const main = () => {
     app.stage.removeChild(gameStartLayer);
 
     sss.playBgm(`BULLETS ${stage + 1}`);
-
-    app.stage.addChild(character);
-    position(character, canvasSize, { bottom: 20, centerX: true });
-
-    app.stage.addChild(enemy);
-    position(enemy, canvasSize, { top: 20, centerX: true });
   };
 
   app.ticker.add((delta) => {
@@ -118,6 +195,8 @@ const main = () => {
     for (const key in keys) {
       keysPressing[key] = keys[key] ? (keysPressing[key] ?? 0) + 1 : 0;
     }
+
+    render();
 
     if (mode === "start") {
       if (keysPressing.ArrowLeft === 1) {
