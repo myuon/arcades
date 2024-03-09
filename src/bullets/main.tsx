@@ -3,8 +3,8 @@ import { useEffect, useRef } from "react";
 import * as sss from "sounds-some-sounds";
 import { arrangeHorizontal, asContainer, centerize } from "../utils/container";
 import {
-  Entity,
   Game,
+  GamePlugin,
   pluginAppealEffect,
   pluginKeydown,
   pluginKeydownOptions,
@@ -126,6 +126,7 @@ const createPlayer = (game: Game) => {
   const character = createGraphics(["l"], undefined, 20);
 
   const entity = Game.entity({
+    alias: "player",
     graphics: character,
     position: {
       bottom: 20,
@@ -149,91 +150,11 @@ const createPlayer = (game: Game) => {
 
   return entity;
 };
-const createEnemy = (game: Game, player: Entity) => {
-  const bullet = createGraphics(
-    [" lll ", "lllll", "lllll", " lll "],
-    0xffffff,
-    8,
-  );
-  const bullets: { graphics: PIXI.Graphics; velocity: PIXI.Point }[] = [];
-  const updateBullets = () => {
-    for (const b of bullets) {
-      b.graphics.x += b.velocity.x;
-      b.graphics.y += b.velocity.y;
-
-      if (!game.app.screen.contains(b.graphics.x, b.graphics.y)) {
-        game.app.stage.removeChild(b.graphics);
-      }
-    }
-  };
-
+const createEnemy = (_game: Game) => {
   const enemy = createGraphics(["l"], 0xff0000);
 
-  const pluginEnemy = () => {
-    let frame = 0;
-
-    return {
-      name: "enemy",
-      onInit: (_game: Game, _entity: Entity) => {
-        frame = 0;
-      },
-      onUnmount: (_game: Game, _entity: Entity) => {
-        for (const b of bullets) {
-          game.app.stage.removeChild(b.graphics);
-        }
-
-        bullets.length = 0;
-      },
-      onRender: (_game: Game, _entity: Entity) => {
-        if (mode === "play") {
-          frame += 1;
-
-          if (frame % 20 === 0) {
-            for (let i = 0; i < 360; i += 360 / 20) {
-              const b = bullet.clone();
-              b.x = enemy.x + enemy.width / 2 - b.width / 2;
-              b.y = enemy.y + enemy.height / 2 - b.height / 2;
-
-              const angle = Math.atan2(
-                player.graphics.y - b.y,
-                player.graphics.x - b.x,
-              );
-
-              bullets.push({
-                graphics: b,
-                velocity: scale(
-                  normalize(
-                    new PIXI.Point(
-                      Math.cos(angle + (i * Math.PI) / 180),
-                      Math.sin(angle + (i * Math.PI) / 180),
-                    ),
-                  ),
-                  4.5,
-                ),
-              });
-              game.app.stage.addChild(b);
-            }
-          }
-
-          updateBullets();
-
-          for (const b of bullets) {
-            if (
-              (player.graphics.x - b.graphics.x) ** 2 +
-                (player.graphics.y - b.graphics.y) ** 2 <
-              (10 + 4) ** 2
-            ) {
-              mode = "gameover";
-              sss.stopBgm();
-              sss.playSoundEffect("explosion");
-            }
-          }
-        }
-      },
-    };
-  };
-
   const entity = Game.entity({
+    alias: "enemy",
     graphics: enemy,
     position: {
       top: 20,
@@ -247,11 +168,100 @@ const createEnemy = (game: Game, player: Entity) => {
         },
         start: () => mode === "play",
       }),
-      pluginEnemy(),
     ],
   });
 
   return entity;
+};
+
+const gamePlugin = (): GamePlugin => {
+  let frame = 0;
+  const bullet = createGraphics(
+    [" lll ", "lllll", "lllll", " lll "],
+    0xffffff,
+    8,
+  );
+  const bullets: { graphics: PIXI.Graphics; velocity: PIXI.Point }[] = [];
+
+  return {
+    name: "game",
+    onRender: (game: Game) => {
+      const updateBullets = () => {
+        for (const b of bullets) {
+          b.graphics.x += b.velocity.x;
+          b.graphics.y += b.velocity.y;
+
+          if (!game.app.screen.contains(b.graphics.x, b.graphics.y)) {
+            game.app.stage.removeChild(b.graphics);
+          }
+        }
+      };
+
+      frame += 1;
+
+      if (mode === "play") {
+        // biome-ignore lint/style/noNonNullAssertion: <explanation>
+        const player = Game.getEntityByAlias(game, "player")!;
+        // biome-ignore lint/style/noNonNullAssertion: <explanation>
+        const enemy = Game.getEntityByAlias(game, "enemy")!;
+
+        if (frame % 20 === 0) {
+          for (let i = 0; i < 360; i += 360 / 20) {
+            const b = bullet.clone();
+            b.x =
+              enemy.graphics.x +
+              (enemy.graphics as PIXI.Graphics).width / 2 -
+              b.width / 2;
+            b.y =
+              enemy.graphics.y +
+              (enemy.graphics as PIXI.Graphics).height / 2 -
+              b.height / 2;
+
+            const angle = Math.atan2(
+              player.graphics.y - b.y,
+              player.graphics.x - b.x,
+            );
+
+            bullets.push({
+              graphics: b,
+              velocity: scale(
+                normalize(
+                  new PIXI.Point(
+                    Math.cos(angle + (i * Math.PI) / 180),
+                    Math.sin(angle + (i * Math.PI) / 180),
+                  ),
+                ),
+                4.5,
+              ),
+            });
+            game.app.stage.addChild(b);
+          }
+        }
+
+        updateBullets();
+
+        for (const b of bullets) {
+          if (
+            (player.graphics.x - b.graphics.x) ** 2 +
+              (player.graphics.y - b.graphics.y) ** 2 <
+            (10 + 4) ** 2
+          ) {
+            mode = "gameover";
+            sss.stopBgm();
+            sss.playSoundEffect("explosion");
+          }
+        }
+      } else if (mode === "start") {
+        if (bullets.length > 0) {
+          for (const b of bullets) {
+            game.app.stage.removeChild(b.graphics);
+          }
+
+          bullets.length = 0;
+        }
+      }
+    },
+  };
 };
 
 let mode: "start" | "play" | "gameover" = "start";
@@ -277,12 +287,13 @@ const main = () => {
     canvasSize,
     entities: [],
     eventQueue: [],
+    plugins: [gamePlugin()],
   };
 
   const gameStartLayer = createGameStart(game);
   const gameOverLayer = createGameOver(game);
   const player = createPlayer(game);
-  const enemy = createEnemy(game, player);
+  const enemy = createEnemy(game);
 
   app.ticker.add(() => {
     sss.update();

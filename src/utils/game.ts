@@ -22,6 +22,12 @@ class RemovePluginEvent extends GameEvent {
   }
 }
 
+export interface GamePlugin {
+  name: string;
+  onInit?: (game: Game) => void;
+  onRender?: (game: Game) => void;
+}
+
 export interface Game {
   app: PIXI.Application;
   keys: { [key: string]: boolean };
@@ -29,6 +35,14 @@ export interface Game {
   entities: Entity[];
   canvasSize: { width: number; height: number };
   eventQueue: GameEvent[];
+  plugins: GamePlugin[];
+}
+
+export interface EntityPlugin {
+  name: string;
+  onInit?: (game: Game, entity: Entity) => void;
+  onRender?: (game: Game, entity: Entity) => void;
+  onUnmount?: (game: Game, entity: Entity) => void;
 }
 
 export interface Entity {
@@ -42,12 +56,8 @@ export interface Entity {
     centerX?: boolean;
     centerY?: boolean;
   };
-  plugins: {
-    name: string;
-    onInit?: (game: Game, entity: Entity) => void;
-    onRender?: (game: Game, entity: Entity) => void;
-    onUnmount?: (game: Game, entity: Entity) => void;
-  }[];
+  plugins: EntityPlugin[];
+  alias?: string;
 }
 
 export const pluginMoveByArrowKeys = (options: {
@@ -196,13 +206,14 @@ export const pluginAppealEffect = (options: {
 
 export namespace Game {
   export const entity = (
-    entity: Pick<Entity, "graphics" | "position" | "plugins">,
+    entity: Pick<Entity, "graphics" | "position" | "plugins" | "alias">,
   ): Entity => {
     return {
       id: nanoid(),
       graphics: entity.graphics,
       position: entity.position,
       plugins: [...entity.plugins],
+      alias: entity.alias,
     };
   };
 
@@ -213,6 +224,10 @@ export namespace Game {
   };
 
   export const init = (game: Game) => {
+    for (const p of game.plugins) {
+      p.onInit?.(game);
+    }
+
     for (const e of game.entities) {
       Game.initEntity(game, e);
     }
@@ -247,6 +262,10 @@ export namespace Game {
 
     game.eventQueue = [];
 
+    for (const l of game.plugins) {
+      l.onRender?.(game);
+    }
+
     if (game.entities.length > 10000) {
       throw new Error("Too many entities");
     }
@@ -276,5 +295,9 @@ export namespace Game {
     }
 
     game.entities = entities;
+  };
+
+  export const getEntityByAlias = (game: Game, alias: string) => {
+    return game.entities.find((e) => e.alias === alias);
   };
 }
