@@ -84,8 +84,8 @@ const main = () => {
 
     return {
       name: "enemy",
-      onRender: (_game: Game, entity: Entity) => {
-        if (mode === "play" && entity.state.type === "done") {
+      onRender: (_game: Game, _entity: Entity) => {
+        if (mode === "play") {
           frame += 1;
         }
       },
@@ -187,7 +187,7 @@ const main = () => {
         initPlay();
       }
     } else if (mode === "play") {
-      const frames = game.entities[1].state.variables.frame as number;
+      const frames = 0;
 
       if (0 < frames && frames < 800 && frames % 20 === 0) {
         for (let i = 0; i < 360; i += 360 / 20) {

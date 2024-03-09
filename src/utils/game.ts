@@ -37,12 +37,6 @@ export interface Entity {
     centerX?: boolean;
     centerY?: boolean;
   };
-  state: {
-    type: "none" | "waiting" | "appeal" | "done";
-    exists: boolean;
-    t: number;
-    variables: Record<string, unknown>;
-  };
   plugins: {
     name: string;
     onInit?: (game: Game, entity: Entity) => void;
@@ -158,12 +152,6 @@ export namespace Game {
       id: nanoid(),
       graphics: entity.graphics,
       position: entity.position,
-      state: {
-        type: "none",
-        exists: false,
-        t: 0,
-        variables: {},
-      },
       plugins: [...entity.plugins],
     });
     position(entity.graphics, game.canvasSize, entity.position);
