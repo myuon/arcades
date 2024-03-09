@@ -46,6 +46,7 @@ export interface Entity {
     name: string;
     onInit?: (game: Game, entity: Entity) => void;
     onRender?: (game: Game, entity: Entity) => void;
+    onUnmount?: (game: Game, entity: Entity) => void;
   }[];
 }
 
@@ -207,15 +208,21 @@ export namespace Game {
 
   export const register = (game: Game, entity: Entity) => {
     game.entities.push(entity);
-    position(entity.graphics, game.canvasSize, entity.position);
+    Game.initEntity(game, entity);
     game.app.stage.addChild(entity.graphics);
   };
 
   export const init = (game: Game) => {
     for (const e of game.entities) {
-      for (const p of e.plugins) {
-        p.onInit?.(game, e);
-      }
+      Game.initEntity(game, e);
+    }
+  };
+
+  export const initEntity = (game: Game, entity: Entity) => {
+    position(entity.graphics, game.canvasSize, entity.position);
+
+    for (const p of entity.plugins) {
+      p.onInit?.(game, entity);
     }
   };
 
@@ -260,8 +267,14 @@ export namespace Game {
 
     for (const e of game.entities) {
       if (!entities.find((entity) => entity.id === e.id)) {
+        for (const p of e.plugins) {
+          p.onUnmount?.(game, e);
+        }
+
         game.app.stage.removeChild(e.graphics);
       }
     }
+
+    game.entities = entities;
   };
 }

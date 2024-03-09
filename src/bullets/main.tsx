@@ -13,95 +13,7 @@ import {
 import { createGraphics } from "../utils/graphics";
 import { normalize, scale } from "../utils/vector";
 
-const keys: { [key: string]: boolean } = {};
-const keysPressing: { [key: string]: number } = {};
-
-const main = () => {
-  const canvasSize = { width: 500, height: 500 };
-  const app = new PIXI.Application({
-    width: canvasSize.width,
-    height: canvasSize.height,
-  });
-  app.stage.eventMode = "static";
-  app.stage.hitArea = app.screen;
-
-  let mode: "start" | "play" | "gameover" = "start";
-
-  const gameOverLayer = asContainer(
-    new PIXI.Text("GAME OVER", {
-      fontFamily: "serif",
-      fontSize: 64,
-      fill: 0xffffff,
-      stroke: 0x0044ff,
-    }),
-    new PIXI.Text("PRESS ENTER TO RESTART", {
-      fontFamily: "serif",
-      fontSize: 24,
-      fill: 0xffffff,
-      stroke: 0x0044ff,
-    }),
-  );
-  arrangeHorizontal(gameOverLayer, { gap: 8, align: "center" });
-  centerize(gameOverLayer, canvasSize);
-
-  let stage = 0;
-
-  const stages = [{}, {}, {}, {}, {}, {}];
-
-  const character = createGraphics(["l"], undefined, 20);
-  const enemy = createGraphics(["l"], 0xff0000);
-  const bullet = createGraphics(
-    [" lll ", "lllll", "lllll", " lll "],
-    0xffffff,
-    8,
-  );
-
-  const pluginEnemy = () => {
-    let frame = 0;
-
-    return {
-      name: "enemy",
-      onRender: (_game: Game, _entity: Entity) => {
-        if (mode === "play") {
-          frame += 1;
-
-          if (frame % 20 === 0) {
-            for (let i = 0; i < 360; i += 360 / 20) {
-              const b = bullet.clone();
-              b.x = enemy.x + enemy.width / 2 - b.width / 2;
-              b.y = enemy.y + enemy.height / 2 - b.height / 2;
-
-              const angle = Math.atan2(character.y - b.y, character.x - b.x);
-
-              bullets.push({
-                graphics: b,
-                velocity: scale(
-                  normalize(
-                    new PIXI.Point(
-                      Math.cos(angle + (i * Math.PI) / 180),
-                      Math.sin(angle + (i * Math.PI) / 180),
-                    ),
-                  ),
-                  4.5,
-                ),
-              });
-              app.stage.addChild(b);
-            }
-          }
-        }
-      },
-    };
-  };
-
-  const game: Game = {
-    keys,
-    keysPressing,
-    app,
-    canvasSize,
-    entities: [],
-    eventQueue: [],
-  };
-
+const createGameStart = (game: Game) => {
   const gameStartLayer = asContainer(
     new PIXI.Text("Bullets", {
       fontFamily: "serif",
@@ -123,7 +35,7 @@ const main = () => {
     }),
   );
   arrangeHorizontal(gameStartLayer, { gap: 8, align: "center" });
-  centerize(gameStartLayer, canvasSize);
+  centerize(gameStartLayer, game.canvasSize);
 
   const gameStartLayerEntity = Game.entity({
     graphics: gameStartLayer,
@@ -155,7 +67,9 @@ const main = () => {
           {
             key: " ",
             onKeydown() {
-              initPlay();
+              mode = "play";
+
+              sss.playBgm(`BULLETS ${stage + 1}`);
             },
           },
         ]),
@@ -163,7 +77,55 @@ const main = () => {
     ],
   });
 
-  const characterEntity = Game.entity({
+  return gameStartLayerEntity;
+};
+const createGameOver = (game: Game) => {
+  const gameOverLayer = asContainer(
+    new PIXI.Text("GAME OVER", {
+      fontFamily: "serif",
+      fontSize: 64,
+      fill: 0xffffff,
+      stroke: 0x0044ff,
+    }),
+    new PIXI.Text("PRESS ENTER TO RESTART", {
+      fontFamily: "serif",
+      fontSize: 24,
+      fill: 0xffffff,
+      stroke: 0x0044ff,
+    }),
+  );
+  arrangeHorizontal(gameOverLayer, { gap: 8, align: "center" });
+  centerize(gameOverLayer, game.canvasSize);
+
+  const entity = Game.entity({
+    graphics: gameOverLayer,
+    position: {
+      centerX: true,
+      centerY: true,
+    },
+    plugins: [
+      pluginKeydown(
+        pluginKeydownOptions([
+          {
+            key: "Enter",
+            onKeydown() {
+              mode = "start";
+
+              Game.init(game);
+            },
+          },
+        ]),
+      ),
+    ],
+  });
+
+  return entity;
+};
+
+const createPlayer = (game: Game) => {
+  const character = createGraphics(["l"], undefined, 20);
+
+  const entity = Game.entity({
     graphics: character,
     position: {
       bottom: 20,
@@ -172,7 +134,7 @@ const main = () => {
     plugins: [
       pluginMoveByArrowKeys({
         speed: 3,
-        clampedBy: canvasSize,
+        clampedBy: game.canvasSize,
         condition: () => mode === "play",
       }),
       pluginAppealEffect({
@@ -184,7 +146,94 @@ const main = () => {
       }),
     ],
   });
-  const enemyEntity = Game.entity({
+
+  return entity;
+};
+const createEnemy = (game: Game, player: Entity) => {
+  const bullet = createGraphics(
+    [" lll ", "lllll", "lllll", " lll "],
+    0xffffff,
+    8,
+  );
+  const bullets: { graphics: PIXI.Graphics; velocity: PIXI.Point }[] = [];
+  const updateBullets = () => {
+    for (const b of bullets) {
+      b.graphics.x += b.velocity.x;
+      b.graphics.y += b.velocity.y;
+
+      if (!game.app.screen.contains(b.graphics.x, b.graphics.y)) {
+        game.app.stage.removeChild(b.graphics);
+      }
+    }
+  };
+
+  const enemy = createGraphics(["l"], 0xff0000);
+
+  const pluginEnemy = () => {
+    let frame = 0;
+
+    return {
+      name: "enemy",
+      onInit: (_game: Game, _entity: Entity) => {
+        frame = 0;
+      },
+      onUnmount: (_game: Game, _entity: Entity) => {
+        for (const b of bullets) {
+          game.app.stage.removeChild(b.graphics);
+        }
+
+        bullets.length = 0;
+      },
+      onRender: (_game: Game, _entity: Entity) => {
+        if (mode === "play") {
+          frame += 1;
+
+          if (frame % 20 === 0) {
+            for (let i = 0; i < 360; i += 360 / 20) {
+              const b = bullet.clone();
+              b.x = enemy.x + enemy.width / 2 - b.width / 2;
+              b.y = enemy.y + enemy.height / 2 - b.height / 2;
+
+              const angle = Math.atan2(
+                player.graphics.y - b.y,
+                player.graphics.x - b.x,
+              );
+
+              bullets.push({
+                graphics: b,
+                velocity: scale(
+                  normalize(
+                    new PIXI.Point(
+                      Math.cos(angle + (i * Math.PI) / 180),
+                      Math.sin(angle + (i * Math.PI) / 180),
+                    ),
+                  ),
+                  4.5,
+                ),
+              });
+              game.app.stage.addChild(b);
+            }
+          }
+
+          updateBullets();
+
+          for (const b of bullets) {
+            if (
+              (player.graphics.x - b.graphics.x) ** 2 +
+                (player.graphics.y - b.graphics.y) ** 2 <
+              (10 + 4) ** 2
+            ) {
+              mode = "gameover";
+              sss.stopBgm();
+              sss.playSoundEffect("explosion");
+            }
+          }
+        }
+      },
+    };
+  };
+
+  const entity = Game.entity({
     graphics: enemy,
     position: {
       top: 20,
@@ -202,25 +251,38 @@ const main = () => {
     ],
   });
 
-  let bullets: { graphics: PIXI.Graphics; velocity: PIXI.Point }[] = [];
-  const updateBullets = () => {
-    for (const b of bullets) {
-      b.graphics.x += b.velocity.x;
-      b.graphics.y += b.velocity.y;
+  return entity;
+};
 
-      if (!app.screen.contains(b.graphics.x, b.graphics.y)) {
-        app.stage.removeChild(b.graphics);
-      }
-    }
+let mode: "start" | "play" | "gameover" = "start";
+const stages = [{}, {}, {}, {}, {}, {}];
+let stage = 0;
+
+const keys: { [key: string]: boolean } = {};
+const keysPressing: { [key: string]: number } = {};
+
+const main = () => {
+  const canvasSize = { width: 500, height: 500 };
+  const app = new PIXI.Application({
+    width: canvasSize.width,
+    height: canvasSize.height,
+  });
+  app.stage.eventMode = "static";
+  app.stage.hitArea = app.screen;
+
+  const game: Game = {
+    keys,
+    keysPressing,
+    app,
+    canvasSize,
+    entities: [],
+    eventQueue: [],
   };
 
-  const initPlay = () => {
-    mode = "play";
-
-    app.stage.removeChild(gameStartLayer);
-
-    sss.playBgm(`BULLETS ${stage + 1}`);
-  };
+  const gameStartLayer = createGameStart(game);
+  const gameOverLayer = createGameOver(game);
+  const player = createPlayer(game);
+  const enemy = createEnemy(game, player);
 
   app.ticker.add(() => {
     sss.update();
@@ -232,39 +294,11 @@ const main = () => {
     Game.render(game);
 
     if (mode === "start") {
-      Game.declare(game, [gameStartLayerEntity]);
+      Game.declare(game, [gameStartLayer]);
     } else if (mode === "play") {
-      Game.declare(game, [characterEntity, enemyEntity]);
-
-      updateBullets();
-
-      for (const b of bullets) {
-        if (
-          (character.x - b.graphics.x) ** 2 +
-            (character.y - b.graphics.y) ** 2 <
-          (10 + 4) ** 2
-        ) {
-          mode = "gameover";
-          sss.stopBgm();
-          sss.playSoundEffect("explosion");
-
-          app.stage.addChild(gameOverLayer);
-        }
-      }
+      Game.declare(game, [player, enemy]);
     } else if (mode === "gameover") {
-      if (keys.Enter) {
-        mode = "start";
-
-        app.stage.removeChild(gameOverLayer);
-
-        character.x = 250 - character.width / 2;
-        for (const b of bullets) {
-          app.stage.removeChild(b.graphics);
-        }
-        bullets = [];
-
-        app.stage.addChild(gameStartLayer);
-      }
+      Game.declare(game, [player, enemy, gameOverLayer]);
     }
   });
 
