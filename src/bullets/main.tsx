@@ -95,6 +95,7 @@ const main = () => {
             bottom: -20,
             centerX: true,
           },
+          start: () => mode === "play",
         },
       },
       state: {
@@ -113,9 +114,10 @@ const main = () => {
         appeal: {
           type: "move",
           from: {
-            top: -20,
+            top: -40,
             centerX: true,
           },
+          start: () => mode === "play",
         },
       },
       state: {
@@ -135,8 +137,15 @@ const main = () => {
         if (l.effects.appeal) {
           if (l.effects.appeal.type === "move") {
             position(l.graphics, canvasSize, l.effects.appeal.from);
-            l.state.type = "appeal";
+            l.state.type = "waiting";
           }
+        }
+      }
+
+      if (l.state.type === "waiting") {
+        if (l.effects.appeal.start?.()) {
+          l.state.type = "appeal";
+          l.state.t = 0;
         }
       }
 
@@ -156,7 +165,7 @@ const main = () => {
         );
 
         if (l.state.t >= 1) {
-          l.state.type = "none";
+          l.state.type = "done";
         }
       }
     }
@@ -190,7 +199,9 @@ const main = () => {
   app.ticker.add((delta) => {
     sss.update();
     elapsed += delta;
-    frames += 1;
+    if (entities[0].state.type === "done") {
+      frames += 1;
+    }
 
     for (const key in keys) {
       keysPressing[key] = keys[key] ? (keysPressing[key] ?? 0) + 1 : 0;
