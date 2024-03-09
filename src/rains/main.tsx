@@ -1,7 +1,7 @@
 import * as PIXI from "pixi.js";
 import { useEffect, useRef } from "react";
 import * as sss from "sounds-some-sounds";
-import { arrangeHorizontal, asContainer, centerize } from "../utils/container";
+import { arrangeVertical, asContainer, centerize } from "../utils/container";
 import { createGraphics } from "../utils/graphics";
 import { intersectRectWithLine } from "../utils/intersect";
 
@@ -77,7 +77,7 @@ const main = () => {
   );
   app.stage.addChild(gameStartLayer);
 
-  arrangeHorizontal(gameStartLayer, { gap: 8, align: "center" });
+  arrangeVertical(gameStartLayer, { gap: 8, align: "center" });
   centerize(gameStartLayer, canvasSize);
 
   const gameOverLayer = asContainer(
@@ -94,7 +94,7 @@ const main = () => {
       stroke: 0x0044ff,
     }),
   );
-  arrangeHorizontal(gameOverLayer, { gap: 8, align: "center" });
+  arrangeVertical(gameOverLayer, { gap: 8, align: "center" });
   centerize(gameOverLayer, canvasSize);
 
   const scoreText = new PIXI.Text("SCORE: 0", {

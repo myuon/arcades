@@ -7,6 +7,7 @@ import Intersect from "./intersect/main";
 import RootLayout from "./layout";
 import RootPage from "./page";
 import Rains from "./rains/main";
+import Synth from "./synth/main";
 
 const router = createBrowserRouter([
   {
@@ -33,6 +34,10 @@ const router = createBrowserRouter([
       {
         path: "/bullets",
         element: <Bullets />,
+      },
+      {
+        path: "/synth",
+        element: <Synth />,
       },
     ],
   },

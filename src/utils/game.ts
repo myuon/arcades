@@ -204,6 +204,33 @@ export const pluginAppealEffect = (options: {
   };
 };
 
+export const pluginEntityClick = (options: {
+  onClick: (game: Game, entity: Entity) => void;
+}) => {
+  return {
+    name: "click",
+    onInit: (game: Game, entity: Entity) => {
+      entity.graphics.interactive = true;
+      entity.graphics.on("pointerdown", (event) => {
+        if ((entity.graphics as PIXI.Graphics).containsPoint(event.global)) {
+          options.onClick(game, entity);
+        }
+      });
+    },
+  };
+};
+
+export const pluginClick = (options: {
+  onClick: (game: Game) => void;
+}) => {
+  return {
+    name: "click",
+    onInit: (game: Game) => {
+      game.app.stage.on("click", () => options.onClick(game));
+    },
+  };
+};
+
 export namespace Game {
   export const entity = (
     entity: Pick<Entity, "graphics" | "position" | "plugins" | "alias">,

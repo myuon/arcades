@@ -9,7 +9,7 @@ export const asContainer = (...objects: PIXI.DisplayObject[]) => {
   return container;
 };
 
-export const arrangeHorizontal = (
+export const arrangeVertical = (
   object: PIXI.Container,
   options: {
     align: "left" | "center";
@@ -24,6 +24,25 @@ export const arrangeHorizontal = (
 
     if (options.align === "center") {
       child.x = object.width / 2 - bounds.width / 2;
+    }
+  }
+};
+
+export const arrangeHorizontal = (
+  object: PIXI.Container,
+  options: {
+    align: "top" | "center";
+    gap: number;
+  },
+) => {
+  let x = 0;
+  for (const child of object.children) {
+    const bounds = child.getBounds();
+    child.x = x;
+    x += bounds.width + options.gap;
+
+    if (options.align === "center") {
+      child.y = object.height / 2 - bounds.height / 2;
     }
   }
 };

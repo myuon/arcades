@@ -19,6 +19,9 @@ export default function Page() {
       <p>Others</p>
       <ul>
         <li>
+          <Link to="/synth">Synth</Link>
+        </li>
+        <li>
           <Link to="/intersect">Intersect Demo</Link>
         </li>
       </ul>

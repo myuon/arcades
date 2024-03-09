@@ -27,3 +27,15 @@ export const centerOf = (graphics: PIXI.Graphics) => {
     graphics.y + graphics.height / 2,
   );
 };
+
+export const createRectangleGraphics = (
+  width: number,
+  height: number,
+  color: number,
+) => {
+  const graphics = new PIXI.Graphics();
+  graphics.beginFill(color);
+  graphics.drawRect(0, 0, width, height);
+  graphics.endFill();
+  return graphics;
+};

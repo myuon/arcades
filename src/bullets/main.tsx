@@ -1,7 +1,7 @@
 import * as PIXI from "pixi.js";
 import { useEffect, useRef } from "react";
 import * as sss from "sounds-some-sounds";
-import { arrangeHorizontal, asContainer, centerize } from "../utils/container";
+import { arrangeVertical, asContainer, centerize } from "../utils/container";
 import {
   Game,
   GamePlugin,
@@ -34,7 +34,7 @@ const createGameStart = (game: Game) => {
       stroke: 0x0044ff,
     }),
   );
-  arrangeHorizontal(gameStartLayer, { gap: 8, align: "center" });
+  arrangeVertical(gameStartLayer, { gap: 8, align: "center" });
   centerize(gameStartLayer, game.canvasSize);
 
   const gameStartLayerEntity = Game.entity({
@@ -94,7 +94,7 @@ const createGameOver = (game: Game) => {
       stroke: 0x0044ff,
     }),
   );
-  arrangeHorizontal(gameOverLayer, { gap: 8, align: "center" });
+  arrangeVertical(gameOverLayer, { gap: 8, align: "center" });
   centerize(gameOverLayer, game.canvasSize);
 
   const entity = Game.entity({
