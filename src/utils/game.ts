@@ -2,6 +2,10 @@ import { nanoid } from "nanoid";
 import * as PIXI from "pixi.js";
 import { position, positionInterpolated } from "./container";
 
+export type Type<T> = {
+  type: T;
+};
+
 class GameEvent {
   constructor(
     public eventName: string,
@@ -21,6 +25,7 @@ class RemovePluginEvent extends GameEvent {
 export interface Game {
   app: PIXI.Application;
   keys: { [key: string]: boolean };
+  keysPressing: { [key: string]: number };
   entities: Entity[];
   canvasSize: { width: number; height: number };
   eventQueue: GameEvent[];
@@ -28,7 +33,7 @@ export interface Game {
 
 export interface Entity {
   id: string;
-  graphics: PIXI.Graphics;
+  graphics: PIXI.DisplayObject;
   position: {
     left?: number;
     right?: number;
@@ -73,6 +78,10 @@ export const pluginMoveByArrowKeys = (options: {
       }
 
       if (options.clampedBy) {
+        if (!(entity.graphics instanceof PIXI.Graphics)) {
+          throw new Error("Only PIXI.Graphics supported");
+        }
+
         entity.graphics.x = Math.max(
           0,
           Math.min(
@@ -87,6 +96,39 @@ export const pluginMoveByArrowKeys = (options: {
             entity.graphics.y,
           ),
         );
+      }
+    },
+  };
+};
+
+export const pluginKeydownOptions = (
+  options: {
+    key: string;
+    onKeydown: (game: Game, entity: Entity) => void;
+  }[],
+) => {
+  return {
+    watchKeys: [...options.map((o) => o.key)],
+    onKeydown: (game: Game, entity: Entity, key: string) => {
+      const option = options.find((o) => o.key === key);
+      if (option) {
+        option.onKeydown(game, entity);
+      }
+    },
+  };
+};
+
+export const pluginKeydown = (options: {
+  watchKeys: string[];
+  onKeydown: (game: Game, entity: Entity, key: string) => void;
+}) => {
+  return {
+    name: "keydown",
+    onRender: (game: Game, entity: Entity) => {
+      for (const key of options.watchKeys) {
+        if (game.keys[key] && game.keysPressing[key] === 1) {
+          options.onKeydown(game, entity, key);
+        }
       }
     },
   };
@@ -108,6 +150,10 @@ export const pluginAppealEffect = (options: {
   return {
     name: "appealEffect",
     onInit: (game: Game, entity: Entity) => {
+      if (!(entity.graphics instanceof PIXI.Graphics)) {
+        throw new Error("Only PIXI.Graphics supported");
+      }
+
       positionInterpolated(
         entity.graphics,
         t,
@@ -122,6 +168,10 @@ export const pluginAppealEffect = (options: {
       );
     },
     onRender: (game: Game, entity: Entity) => {
+      if (!(entity.graphics instanceof PIXI.Graphics)) {
+        throw new Error("Only PIXI.Graphics supported");
+      }
+
       t += 1 / 30;
       positionInterpolated(
         entity.graphics,
@@ -189,6 +239,10 @@ export namespace Game {
     }
 
     game.eventQueue = [];
+
+    if (game.entities.length > 10000) {
+      throw new Error("Too many entities");
+    }
   };
 
   export const emit = (game: Game, event: GameEvent) => {

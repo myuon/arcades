@@ -6,6 +6,8 @@ import {
   Entity,
   Game,
   pluginAppealEffect,
+  pluginKeydown,
+  pluginKeydownOptions,
   pluginMoveByArrowKeys,
 } from "../utils/game";
 import { createGraphics } from "../utils/graphics";
@@ -24,31 +26,6 @@ const main = () => {
   app.stage.hitArea = app.screen;
 
   let mode: "start" | "play" | "gameover" = "start";
-
-  const gameStartLayer = asContainer(
-    new PIXI.Text("Bullets", {
-      fontFamily: "serif",
-      fontSize: 64,
-      fill: 0xffffff,
-      stroke: 0x0044ff,
-    }),
-    new PIXI.Text("← STAGE 1 →", {
-      fontFamily: "serif",
-      fontSize: 24,
-      fill: 0xffffff,
-      stroke: 0x0044ff,
-    }),
-    new PIXI.Text("Press SPACE to Start", {
-      fontFamily: "serif",
-      fontSize: 28,
-      fill: 0xffffff,
-      stroke: 0x0044ff,
-    }),
-  );
-  app.stage.addChild(gameStartLayer);
-
-  arrangeHorizontal(gameStartLayer, { gap: 8, align: "center" });
-  centerize(gameStartLayer, canvasSize);
 
   const gameOverLayer = asContainer(
     new PIXI.Text("GAME OVER", {
@@ -118,11 +95,73 @@ const main = () => {
 
   const game: Game = {
     keys,
+    keysPressing,
     app,
     canvasSize,
     entities: [],
     eventQueue: [],
   };
+
+  const gameStartLayer = asContainer(
+    new PIXI.Text("Bullets", {
+      fontFamily: "serif",
+      fontSize: 64,
+      fill: 0xffffff,
+      stroke: 0x0044ff,
+    }),
+    new PIXI.Text("← STAGE 1 →", {
+      fontFamily: "serif",
+      fontSize: 24,
+      fill: 0xffffff,
+      stroke: 0x0044ff,
+    }),
+    new PIXI.Text("Press SPACE to Start", {
+      fontFamily: "serif",
+      fontSize: 28,
+      fill: 0xffffff,
+      stroke: 0x0044ff,
+    }),
+  );
+  arrangeHorizontal(gameStartLayer, { gap: 8, align: "center" });
+  centerize(gameStartLayer, canvasSize);
+
+  const gameStartLayerEntity = Game.entity({
+    graphics: gameStartLayer,
+    position: {
+      centerX: true,
+      centerY: true,
+    },
+    plugins: [
+      pluginKeydown(
+        pluginKeydownOptions([
+          {
+            key: "ArrowLeft",
+            onKeydown() {
+              stage = (stage - 1 + stages.length) % stages.length;
+              (gameStartLayer.children[1] as PIXI.Text).text = `← STAGE ${
+                stage + 1
+              } →`;
+            },
+          },
+          {
+            key: "ArrowRight",
+            onKeydown() {
+              stage = (stage + 1) % stages.length;
+              (gameStartLayer.children[1] as PIXI.Text).text = `← STAGE ${
+                stage + 1
+              } →`;
+            },
+          },
+          {
+            key: " ",
+            onKeydown() {
+              initPlay();
+            },
+          },
+        ]),
+      ),
+    ],
+  });
 
   const characterEntity = Game.entity({
     graphics: character,
@@ -193,20 +232,7 @@ const main = () => {
     Game.render(game);
 
     if (mode === "start") {
-      if (keysPressing.ArrowLeft === 1) {
-        stage = (stage - 1 + stages.length) % stages.length;
-        (gameStartLayer.children[1] as PIXI.Text).text = `← STAGE ${
-          stage + 1
-        } →`;
-      } else if (keysPressing.ArrowRight === 1) {
-        stage = (stage + 1) % stages.length;
-        (gameStartLayer.children[1] as PIXI.Text).text = `← STAGE ${
-          stage + 1
-        } →`;
-      }
-      if (keys[" "]) {
-        initPlay();
-      }
+      Game.declare(game, [gameStartLayerEntity]);
     } else if (mode === "play") {
       Game.declare(game, [characterEntity, enemyEntity]);
 

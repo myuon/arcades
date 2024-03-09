@@ -37,7 +37,7 @@ export const centerize = (
 };
 
 const calculatePosition = (
-  def: PIXI.Container,
+  def: PIXI.DisplayObject,
   containerSize: { width: number; height: number },
   layout: {
     left?: number;
@@ -49,24 +49,25 @@ const calculatePosition = (
   },
 ) => {
   const position = new PIXI.Point(def.x, def.y);
+  const bounds = def.getBounds();
 
   if (layout.left !== undefined) {
     position.x = layout.left;
   }
   if (layout.right !== undefined) {
-    position.x = containerSize.width - def.width - layout.right;
+    position.x = containerSize.width - bounds.width - layout.right;
   }
   if (layout.top !== undefined) {
     position.y = layout.top;
   }
   if (layout.bottom !== undefined) {
-    position.y = containerSize.height - def.height - layout.bottom;
+    position.y = containerSize.height - bounds.height - layout.bottom;
   }
   if (layout.centerX) {
-    position.x = containerSize.width / 2 - def.width / 2;
+    position.x = containerSize.width / 2 - bounds.width / 2;
   }
   if (layout.centerY) {
-    position.y = containerSize.height / 2 - def.height / 2;
+    position.y = containerSize.height / 2 - bounds.height / 2;
   }
 
   return position;
@@ -80,7 +81,7 @@ const interpolateLinearly = (t: number, from: PIXI.Point, to: PIXI.Point) => {
 };
 
 export const position = (
-  object: PIXI.Container,
+  object: PIXI.DisplayObject,
   containerSize: { width: number; height: number },
   layout: {
     left?: number;
