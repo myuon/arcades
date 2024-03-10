@@ -112,7 +112,14 @@ const pluginGame = (): GamePlugin => {
         ];
 
         (text.children[1] as PIXI.Text).text = mml[0];
-        arrangeVertical(text, { align: "left", gap: 8 });
+
+        container.removeChildren();
+        container.addChild(
+          ...notes.map((n) => {
+            return n.graphics;
+          }),
+        );
+        arrangeHorizontal(container, { align: "center", gap: 2 });
       }
 
       dirty = false;
