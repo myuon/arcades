@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import { RouterProvider, createBrowserRouter } from "react-router-dom";
 import Breakout from "./breakout/main";
 import Bullets from "./bullets/main";
+import Gsx from "./gsx/main";
 import Intersect from "./intersect/main";
 import RootLayout from "./layout";
 import RootPage from "./page";
@@ -38,6 +39,10 @@ const router = createBrowserRouter([
       {
         path: "/synth",
         element: <Synth />,
+      },
+      {
+        path: "/gsx",
+        element: <Gsx />,
       },
     ],
   },

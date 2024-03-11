@@ -24,6 +24,9 @@ export default function Page() {
         <li>
           <Link to="/intersect">Intersect Demo</Link>
         </li>
+        <li>
+          <Link to="/gsx">GSX Demo</Link>
+        </li>
       </ul>
     </>
   );
