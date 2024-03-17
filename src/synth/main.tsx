@@ -323,19 +323,18 @@ const main = () => {
     if (event.global.x < gridSize.x) {
       return;
     }
-    const key =
-      keys[
-        keys.length -
-          1 -
-          (Math.floor(event.global.y / gridSize.y) % keys.length)
-      ];
-    const pitch = 5 - Math.floor(event.global.y / gridSize.y / keys.length);
+
+    const inScreen = new PIXI.Point(
+      event.global.x + screen.screenPoint.x,
+      event.global.y + screen.screenPoint.y,
+    );
+    const n = findNote(inScreen.x, inScreen.y);
 
     addNote({
-      key,
-      pitch,
+      key: n.key,
+      pitch: n.pitch,
       length: 1,
-      start: Math.floor(event.global.x / gridSize.x) - 1,
+      start: n.start,
     });
   });
 
