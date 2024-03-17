@@ -1,4 +1,3 @@
-import hash from "object-hash";
 import * as PIXI from "pixi.js";
 
 export namespace GSX {
@@ -53,13 +52,14 @@ export namespace GSX {
   };
 
   interface Fiber {
-    dom: PIXI.Container | null;
+    dom?: PIXI.Container;
     name?: string;
     props: PropsRecord;
     parent?: Fiber;
     child?: Fiber;
     next?: Fiber;
     alternate?: Fiber;
+    effectTag?: "PLACEMENT" | "UPDATE" | "DELETION";
   }
 
   export class Renderer {
@@ -91,8 +91,8 @@ export namespace GSX {
             child.y = origin.y;
             const bounds = child.getBounds();
 
-            origin.x = layout?.type === "row" ? bounds.width + layout.gap : 0;
-            origin.y =
+            origin.x += layout?.type === "row" ? bounds.width + layout.gap : 0;
+            origin.y +=
               layout?.type === "column" ? bounds.height + layout.gap : 0;
           }
         };
@@ -144,36 +144,111 @@ export namespace GSX {
       return dom;
     }
 
+    static updateDom(
+      dom: PIXI.DisplayObject,
+      prevProps: PropsRecord,
+      currentProps: PropsRecord,
+    ) {
+      Object.keys(prevProps)
+        .filter((key) => key !== "children")
+        .filter((key) => !(key in currentProps))
+        .forEach((key) => {
+          // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+          (dom as any)[key] = undefined;
+        });
+
+      Object.keys(currentProps)
+        .filter((key) => key !== "children")
+        .filter((key) => !(key in prevProps))
+        .forEach((key) => {
+          // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+          (dom as any)[key] = currentProps[key];
+        });
+    }
+
+    static commitFiber(fiber: Fiber) {
+      if (!fiber.dom) {
+        throw new Error("Empty fiber dom");
+      }
+
+      if (fiber.effectTag === "PLACEMENT") {
+        fiber.parent?.dom?.addChild(fiber.dom);
+      } else if (fiber.effectTag === "DELETION") {
+        fiber.parent?.dom?.removeChild(fiber.dom);
+      } else if (fiber.effectTag === "UPDATE") {
+        Renderer.updateDom(
+          fiber.dom,
+          fiber.alternate?.props ?? {},
+          fiber.props,
+        );
+      }
+    }
+
+    static reconcileChildren(
+      fiber: Fiber,
+      components: Component[] | undefined,
+    ) {
+      let oldFiber = fiber.alternate?.child;
+      let prevFiber: Fiber = fiber;
+
+      let index = 0;
+
+      while (index < (components ?? []).length || oldFiber) {
+        const child = components?.[index];
+        const sameType =
+          child?.type === "component" &&
+          oldFiber?.name === child.component.name;
+
+        const newFiber: Fiber = sameType
+          ? {
+              dom: oldFiber?.dom,
+              name: oldFiber?.name,
+              props: child.component.props,
+              parent: fiber,
+              alternate: oldFiber,
+              effectTag: "UPDATE",
+            }
+          : child?.type === "component"
+            ? {
+                dom: undefined,
+                name: child.component.name,
+                props: child.component.props,
+                parent: fiber,
+                effectTag: "PLACEMENT",
+              }
+            : {
+                ...oldFiber,
+                props: oldFiber?.props ?? {},
+                effectTag: "DELETION",
+              };
+
+        if (index === 0) {
+          prevFiber.child = newFiber;
+        } else {
+          prevFiber.next = newFiber;
+        }
+
+        if (oldFiber) {
+          oldFiber = oldFiber.next;
+        }
+
+        prevFiber = newFiber;
+        index++;
+
+        Renderer.processFiber(newFiber);
+      }
+    }
+
     static processFiber(fiber: Fiber) {
       if (!fiber.dom) {
         fiber.dom = Renderer.createDom(fiber);
       }
 
-      if (fiber.parent) {
-        fiber.parent.dom?.addChild(fiber.dom);
-      }
-
-      let prevFiber: Fiber = fiber;
-      (fiber.props.children as Component[])?.forEach((child, index) => {
-        if (child.type === "component") {
-          const newFiber = {
-            dom: null,
-            name: child.component.name,
-            props: child.component.props,
-            parent: fiber,
-          };
-
-          if (index === 0) {
-            prevFiber.child = newFiber;
-          } else {
-            prevFiber.next = newFiber;
-          }
-
-          Renderer.processFiber(newFiber);
-
-          prevFiber = newFiber;
-        }
-      });
+      Renderer.reconcileChildren(
+        fiber,
+        fiber.props.children as Component[] | undefined,
+      );
+      Renderer.commitFiber(fiber);
     }
 
     static renderTo(
@@ -203,153 +278,8 @@ export namespace GSX {
         return;
       }
 
-      console.log("render");
-
       this.prev = Renderer.renderTo(component, this.container, this.prev);
       this.rerender = false;
-
-      console.log(this.prev);
     }
-
-    // diff(container: PIXI.Container, prev: Component, current: Component) {
-    //   if (prev.type === current.type) {
-    //     if (prev.type === "none") {
-    //       return;
-    //     }
-    //     if (prev.type === "component" && current.type === "component") {
-    //       return this.diffPropsComponent(
-    //         container,
-    //         prev.component,
-    //         current.component,
-    //       );
-    //     }
-
-    //     throw new Error("Invalid component type");
-    //   }
-    //   if (prev.type === "none") {
-    //     if (current.type === "component") {
-    //       return this.createComponent(current.component, {
-    //         container,
-    //         origin: new PIXI.Point(0, 0),
-    //       });
-    //     }
-
-    //     throw new Error("Invalid component type");
-    //   }
-    //   if (current.type === "none") {
-    //     if (prev.type === "component") {
-    //       container.removeChildAt(0);
-    //     }
-
-    //     throw new Error("Invalid component type");
-    //   }
-    // }
-
-    // diffPropsComponent(
-    //   container: PIXI.Container,
-    //   prev: PropsComponent,
-    //   current: PropsComponent,
-    // ) {
-    //   if (prev.name !== current.name) {
-    //     container.removeChildAt(0);
-    //     return this.createComponent(current, {
-    //       container,
-    //       origin: new PIXI.Point(0, 0),
-    //     });
-    //   }
-
-    //   return this.diffProps(
-    //     container.getChildAt(0),
-    //     prev.name,
-    //     prev.props,
-    //     current.props,
-    //   );
-    // }
-
-    // diffProps(
-    //   container: PIXI.DisplayObject,
-    //   name: PropsComponent["name"],
-    //   prev: PropsRecord,
-    //   current: PropsRecord,
-    // ) {
-    //   if (name === "text") {
-    //     const text = container as PIXI.Text;
-    //     const {
-    //       fontSize,
-    //       fontFamily,
-    //       text: content,
-    //     } = current as TextElementProps;
-
-    //     if (fontSize && text.style.fontSize !== fontSize) {
-    //       text.style.fontSize = fontSize;
-    //     }
-    //     if (fontFamily && text.style.fontFamily !== fontFamily) {
-    //       text.style.fontFamily = fontFamily;
-    //     }
-    //     if (prev.content !== content) {
-    //       text.text = content;
-    //     }
-    //   } else if (name === "container") {
-    //     throw new Error("Not implemented");
-    //   }
-    // }
-
-    // static renderComponent(
-    //   component: Component,
-    //   options: { container: PIXI.Container; origin: PIXI.Point },
-    // ) {
-    //   if (component.type === "none") {
-    //     return;
-    //   }
-    //   if (component.type === "component") {
-    //     return Renderer.createComponent(component.component, options);
-    //   }
-
-    //   throw new Error("Invalid component type");
-    // }
-
-    // static createComponent(
-    //   component: PropsComponent,
-    //   options: {
-    //     container: PIXI.Container;
-    //     origin: PIXI.Point;
-    //   },
-    // ) {
-    //   if (component.name === "text") {
-    //     const {
-    //       fontSize,
-    //       fontFamily,
-    //       text: content,
-    //     } = component.props as TextElementProps;
-
-    //     const text = new PIXI.Text(content, {
-    //       fontFamily: fontFamily ?? "serif",
-    //       fontSize: fontSize ?? 24,
-    //       fill: 0xffffff,
-    //       stroke: 0x0044ff,
-    //     });
-    //     text.x = options.origin.x;
-    //     text.y = options.origin.y;
-
-    //     options.container.addChild(text);
-    //   } else if (component.name === "container") {
-    //     const { children, layout } = component.props as ContainerProps;
-
-    //     for (const child of children) {
-    //       Renderer.renderComponent(child, {
-    //         container: options.container,
-    //         origin: options.origin,
-    //       });
-    //       options.origin.x =
-    //         layout.type === "row" ? options.container.width + layout.gap : 0;
-    //       options.origin.y =
-    //         layout.type === "column"
-    //           ? options.container.height + layout.gap
-    //           : 0;
-    //     }
-    //   } else {
-    //     throw new Error(`Unknown component: ${component.name}`);
-    //   }
-    // }
   }
 }

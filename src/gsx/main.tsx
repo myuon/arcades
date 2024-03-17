@@ -8,6 +8,10 @@ const gamePlugin = (): GamePlugin => {
   const renderer = new GSX.Renderer();
   let size = 16;
   let gap = 0;
+  const children = [
+    GSX.text({ fontSize: size, text: "Hello, World" }),
+    GSX.text({ fontSize: size, text: "Next line" }),
+  ];
 
   return {
     name: "game",
@@ -17,24 +21,22 @@ const gamePlugin = (): GamePlugin => {
       game.app.stage.on("click", () => {
         size += 2;
         gap += 2;
+        children.push(GSX.text({ fontSize: size, text: "New line" }));
 
         renderer.rerender = true;
       });
-
+    },
+    onRender: (game) => {
       renderer.render(
         GSX.container({
           layout: {
             type: "column",
             gap: gap,
           },
-          children: [
-            GSX.text({ fontSize: size, text: "Hello, World" }),
-            GSX.text({ fontSize: size, text: "Next line" }),
-          ],
+          children,
         }),
       );
     },
-    onRender: (game) => {},
   };
 };
 
