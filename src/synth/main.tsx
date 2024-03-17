@@ -171,15 +171,38 @@ const main = () => {
 
     length += 4;
 
-    const tracks = [Array.from({ length }).map(() => "r4")];
+    const tracks = [
+      Array.from({ length }).map(() => ({ key: "rest", pitch: 0 })),
+    ];
 
     for (const note of notes) {
       for (let i = note.start; i < note.start + note.length; i++) {
-        tracks[0][i] = `${note.key}4`;
+        tracks[0][i] = { key: note.key, pitch: note.pitch };
       }
     }
 
-    return `@synth o4 ${tracks[0].join(" ")}`;
+    const words = ["@synth o4"];
+    let pitch = 4;
+    let i = 0;
+    while (i < length) {
+      const note = tracks[0][i];
+      if (note.key === "rest") {
+        words.push("r4");
+        i++;
+        continue;
+      }
+
+      if (note.pitch !== pitch) {
+        words.push(`o${note.pitch}`);
+
+        pitch = note.pitch;
+      }
+
+      words.push(`${note.key}4`);
+      i++;
+    }
+
+    return words.join(" ");
   };
 
   // grid
