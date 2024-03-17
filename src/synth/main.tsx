@@ -40,12 +40,13 @@ const main = () => {
   });
   app.stage.eventMode = "static";
   app.stage.hitArea = app.screen;
+  app.stage.sortableChildren = true;
 
   const gridSize = { x: 48, y: 16 };
   const findNote = (x: number, y: number) => {
     const ikey = Math.floor(y / gridSize.y);
     const key = keys[keys.length - 1 - (ikey % keys.length)];
-    const pitch = 5 - Math.floor(ikey / keys.length);
+    const pitch = 6 - Math.floor(ikey / keys.length);
 
     return {
       key,
@@ -209,14 +210,16 @@ const main = () => {
 
   const screen = {
     width: 3500,
-    height: 750,
+    height: 650,
     screenPointRaw: new PIXI.Point(0, 0),
     screenPoint: new PIXI.Point(0, 0),
+    headers: [] as {
+      inScreen: PIXI.Point;
+      dom: PIXI.Text;
+    }[],
     dom: {
       scrollBarX: new PIXI.Graphics(),
       scrollBarY: new PIXI.Graphics(),
-      lines: [],
-      headers: [],
     },
   };
   const initScreen = () => {
@@ -245,6 +248,31 @@ const main = () => {
     scrollBarY.position.set(canvasSize.width - 10, 0);
     scrollBarY.zIndex = 2;
     app.stage.addChild(scrollBarY);
+
+    for (let i = 0; i < screen.height; i += gridSize.y) {
+      const note = findNote(0, i);
+      const text = new PIXI.Text(`${note.key.toUpperCase()}${note.pitch}`, {
+        fontSize: 14,
+        fill: 0xffffff,
+      });
+      text.position.set(12, i);
+
+      screen.headers.push({ inScreen: new PIXI.Point(12, i), dom: text });
+
+      app.stage.addChild(text);
+    }
+    for (let i = 0; i < screen.height; i += gridSize.y) {
+      const line = createRectangleGraphics(1024, 1, 0x666666);
+      line.position.set(0, i);
+
+      app.stage.addChild(line);
+    }
+    for (let i = 0; i < screen.width; i += gridSize.x) {
+      const line = createRectangleGraphics(1, 1024, 0xffffff);
+      line.position.set(i, 0);
+
+      app.stage.addChild(line);
+    }
   };
 
   const reposition = () => {
@@ -254,28 +282,14 @@ const main = () => {
         r.inScreen.y - screen.screenPoint.y,
       );
     }
+
+    for (const header of screen.headers) {
+      header.dom.position.set(
+        header.inScreen.x - screen.screenPoint.x,
+        header.inScreen.y - screen.screenPoint.y,
+      );
+    }
   };
-
-  for (let i = 0; i < screen.height; i += gridSize.y) {
-    const line = createRectangleGraphics(1024, 1, 0x666666);
-    line.position.set(0, i);
-
-    const note = findNote(0, i);
-    const text = new PIXI.Text(`${note.key.toUpperCase()}${note.pitch}`, {
-      fontSize: 14,
-      fill: 0xffffff,
-    });
-    text.position.set(12, i);
-
-    app.stage.addChild(line);
-    app.stage.addChild(text);
-  }
-  for (let i = 0; i < screen.width; i += gridSize.x) {
-    const line = createRectangleGraphics(1, 1024, 0xffffff);
-    line.position.set(i, 0);
-
-    app.stage.addChild(line);
-  }
 
   try {
     const ns: Note[] = JSON.parse(localStorage.getItem("synth") ?? "");
