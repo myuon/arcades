@@ -1,10 +1,8 @@
+import { nanoid } from "nanoid";
 import * as PIXI from "pixi.js";
 import { useEffect, useRef } from "react";
 import * as sss from "sounds-some-sounds";
-import {
-  createRectangleGraphics,
-  drawRectangleGraphics,
-} from "../utils/graphics";
+import { createRectangleGraphics } from "../utils/graphics";
 
 const keysPressed: { [key: string]: boolean } = {};
 const keysPressing: { [key: string]: number } = {};
@@ -25,11 +23,12 @@ const keysPressing: { [key: string]: number } = {};
 const keys = "cdefgab".split("");
 
 interface Note {
+  id: string;
   key: string;
   pitch: number;
   length: number;
   start: number;
-  dom?: PIXI.Graphics;
+  dom: PIXI.Graphics;
 }
 
 const main = () => {
@@ -54,44 +53,116 @@ const main = () => {
     };
   };
 
-  const notes: Note[] = [
-    {
-      key: "c",
-      pitch: 4,
-      length: 1,
-      start: 0,
-    },
-    {
-      key: "d",
-      pitch: 3,
-      length: 1,
-      start: 1,
-    },
-  ];
-  const renderNotes = () => {
-    for (const note of notes) {
-      if (!note.dom) {
-        note.dom = createRectangleGraphics(gridSize.x, gridSize.y, 0xff0000);
-        note.dom.eventMode = "static";
-        note.dom.cursor = "pointer";
-        note.dom.position.set(note.start * 24, note.pitch * 24);
-        note.dom.x = (note.start + 1) * gridSize.x;
+  let notes: Note[] = [];
 
-        // find Y
-        let y = 0;
-        while (
-          findNote(0, y).key !== note.key ||
-          findNote(0, y).pitch !== note.pitch
-        ) {
-          y += gridSize.y;
-        }
+  const addNote = (note: Partial<Note>) => {
+    if (!note.start) {
+      note.start = 0;
+    }
+    if (!note.pitch) {
+      note.pitch = 3;
+    }
 
-        note.dom.y = y;
+    if (!note.id) {
+      note.id = nanoid();
+    }
 
-        app.stage.addChild(note.dom);
+    if (!note.dom) {
+      const graphics = createRectangleGraphics(
+        gridSize.x,
+        gridSize.y,
+        0xff0000,
+      );
+      graphics.eventMode = "static";
+      graphics.cursor = "pointer";
+      graphics.position.set(note.start * 24, note.pitch * 24);
+      graphics.x = (note.start + 1) * gridSize.x;
+
+      graphics.on(
+        "pointerdown",
+        function (this: string) {
+          dragTarget = notes.find((note) => note.id === this) ?? null;
+          if (dragTarget?.dom) {
+            dragTarget.dom.alpha = 0.5;
+          }
+
+          app.stage.on("pointermove", onDragMove);
+        },
+        note.id,
+      );
+      graphics.on(
+        "pointerup",
+        function (this: string, event: PIXI.FederatedPointerEvent) {
+          if (event.button === 2) {
+            deleteNote(this);
+          }
+        },
+        note.id,
+      );
+
+      // find Y
+      let y = 0;
+      while (
+        findNote(0, y).key !== note.key ||
+        findNote(0, y).pitch !== note.pitch
+      ) {
+        y += gridSize.y;
       }
+
+      graphics.y = y;
+
+      note.dom = graphics;
+
+      app.stage.addChild(note.dom);
+    }
+
+    notes.push(note as Note);
+  };
+  const updateNote = (id: string, value: Partial<Note>) => {
+    const i = notes.findIndex((note) => note.id === id);
+    if (i !== -1) {
+      notes[i] = { ...notes[i], ...value };
     }
   };
+  const deleteNote = (id: string) => {
+    const i = notes.findIndex((note) => note.id === id);
+    console.log("delete", i);
+    if (i !== -1) {
+      app.stage.removeChild(notes[i].dom as PIXI.Graphics);
+      notes = notes.filter((note) => note.id !== id);
+    }
+  };
+
+  let dragTarget: Note | null = null;
+  const onDragMove = (event: PIXI.FederatedPointerEvent) => {
+    if (dragTarget) {
+      dragTarget.dom?.position.set(
+        Math.floor(event.global.x / gridSize.x) * gridSize.x,
+        Math.floor(event.global.y / gridSize.y) * gridSize.y,
+      );
+    }
+  };
+  const onDragEnd = () => {
+    if (dragTarget) {
+      app.stage.off("pointermove", onDragMove);
+      if (dragTarget.dom) {
+        dragTarget.dom.alpha = 1;
+      }
+      const note = notes.find((note) => note.id === dragTarget?.id);
+      if (note) {
+        const i = findNote(dragTarget.dom?.x, dragTarget.dom?.y);
+
+        updateNote(note.id, {
+          key: i.key,
+          pitch: i.pitch,
+          start: i.start,
+        });
+      }
+
+      dragTarget = null;
+    }
+  };
+
   const renderMML = () => {
     let length = 0;
     for (const note of notes) {
@@ -133,14 +204,24 @@ const main = () => {
     app.stage.addChild(line);
   }
 
-  renderNotes();
+  addNote({
+    key: "c",
+    pitch: 4,
+    length: 1,
+    start: 0,
+  });
+  addNote({
+    key: "d",
+    pitch: 3,
+    length: 1,
+    start: 1,
+  });
 
+  app.stage.on("pointerup", onDragEnd);
+  app.stage.on("pointerupoutside", onDragEnd);
   app.stage.on("pointerdown", (event) => {
     for (const note of notes) {
       if (note.dom?.containsPoint(event.global)) {
-        note.dom.clear();
-        drawRectangleGraphics(note.dom, gridSize.x, gridSize.y, 0x00ff00);
-
         return;
       }
     }
@@ -156,14 +237,12 @@ const main = () => {
       ];
     const pitch = 5 - Math.floor(event.global.y / gridSize.y / keys.length);
 
-    notes.push({
+    addNote({
       key,
       pitch,
       length: 1,
       start: Math.floor(event.global.x / gridSize.x) - 1,
     });
-
-    renderNotes();
   });
 
   app.ticker.add(() => {
@@ -208,12 +287,17 @@ export default function Page() {
       e.preventDefault();
       keysPressed[e.key] = false;
     };
+    const contextmenuhandler = (e: Event) => {
+      e.preventDefault();
+    };
 
     window.addEventListener("keydown", keydownhandler);
     window.addEventListener("keyup", keyuphandler);
+    ref.current?.addEventListener("contextmenu", contextmenuhandler);
 
     return () => {
       app.destroy();
+      ref.current?.removeEventListener("contextmenu", contextmenuhandler);
       window.removeEventListener("keydown", keydownhandler);
       window.removeEventListener("keyup", keyuphandler);
     };
