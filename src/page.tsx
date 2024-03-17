@@ -27,6 +27,9 @@ export default function Page() {
         <li>
           <Link to="/gsx">GSX Demo</Link>
         </li>
+        <li>
+          <Link to="/scroll">Scroll Demo</Link>
+        </li>
       </ul>
     </>
   );

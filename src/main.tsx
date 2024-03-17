@@ -8,6 +8,7 @@ import Intersect from "./intersect/main";
 import RootLayout from "./layout";
 import RootPage from "./page";
 import Rains from "./rains/main";
+import Scroll from "./scroll/main";
 import Synth from "./synth/main";
 
 const router = createBrowserRouter([
@@ -43,6 +44,10 @@ const router = createBrowserRouter([
       {
         path: "/gsx",
         element: <Gsx />,
+      },
+      {
+        path: "/scroll",
+        element: <Scroll />,
       },
     ],
   },
