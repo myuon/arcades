@@ -62,6 +62,7 @@ const main = () => {
   );
   scrollBarX.endFill();
   scrollBarX.position.set(0, canvasSize.height - 10);
+  scrollBarX.zIndex = 2;
   app.stage.addChild(scrollBarX);
 
   const scrollBarY = new PIXI.Graphics();
@@ -74,6 +75,7 @@ const main = () => {
   );
   scrollBarY.endFill();
   scrollBarY.position.set(canvasSize.width - 10, 0);
+  scrollBarY.zIndex = 2;
   app.stage.addChild(scrollBarY);
 
   const updateMapPoint = (x: number, y: number) => {
