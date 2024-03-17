@@ -126,7 +126,6 @@ const main = () => {
   };
   const deleteNote = (id: string) => {
     const i = notes.findIndex((note) => note.id === id);
-    console.log("delete", i);
     if (i !== -1) {
       app.stage.removeChild(notes[i].dom as PIXI.Graphics);
       notes = notes.filter((note) => note.id !== id);
