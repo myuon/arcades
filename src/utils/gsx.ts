@@ -21,7 +21,7 @@ export namespace GSX {
   export interface TextElementProps {
     fontSize?: number;
     fontFamily?: string;
-    content: string;
+    text: string;
   }
 
   export const text = (props: TextElementProps): Component => {
@@ -54,37 +54,130 @@ export namespace GSX {
 
   export class Renderer {
     container: PIXI.Container;
-    cache: string;
     prev: Component;
+    rerender: boolean;
 
     constructor() {
       this.container = new PIXI.Container();
-      this.cache = "";
+      this.rerender = true;
       this.prev = {
         type: "none",
       };
     }
 
+    static createDisplayObject(name: PropsComponent["name"]) {
+      if (name === "text") {
+        return new PIXI.Text("test", {
+          fill: 0xffffff,
+          stroke: 0x0044ff,
+        });
+      }
+      if (name === "container") {
+        const container = new PIXI.Container();
+        let layout: ContainerProps["layout"] | undefined;
+
+        const arrange = () => {
+          const origin = new PIXI.Point(0, 0);
+
+          for (const child of container.children) {
+            child.x = origin.x;
+            child.y = origin.y;
+            const bounds = child.getBounds();
+
+            origin.x = layout?.type === "row" ? bounds.width + layout.gap : 0;
+            origin.y =
+              layout?.type === "column" ? bounds.height + layout.gap : 0;
+          }
+        };
+
+        container.addChild = function <U extends PIXI.DisplayObject[]>(
+          ...children: U
+        ): U[0] {
+          const value = PIXI.Container.prototype.addChild.call(
+            this,
+            ...children,
+          );
+          arrange();
+
+          return value;
+        };
+
+        return new Proxy(container, {
+          set: (target, key, value) => {
+            if (key === "layout") {
+              layout = value;
+              arrange();
+
+              return true;
+            }
+
+            return Reflect.set(target, key, value);
+          },
+        });
+      }
+
+      throw new Error(`Unknown component: ${name}`);
+    }
+
+    static renderTo(component: Component, container: PIXI.Container) {
+      if (component.type === "none") {
+        return;
+      }
+
+      const dom = Renderer.createDisplayObject(component.component.name);
+
+      Object.keys(component.component.props ?? {}).forEach((key) => {
+        if (key === "children") {
+          return;
+        }
+
+        // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+        (dom as any)[key] = component.component.props[key];
+
+        console.log("set", key, component.component.props[key]);
+      });
+
+      component.component.props.children?.forEach((child: Component) => {
+        // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+        Renderer.renderTo(child, dom as any);
+      });
+      container.addChild(dom);
+    }
+
     render(component: Component) {
+      if (!this.rerender) {
+        return;
+      }
+
+      console.log("render");
+
+      Renderer.renderTo(component, this.container);
+
       if (component.type === "component") {
-        this.renderComponent(component, {
+        // this.reconcile(this.prev, component);
+        // const dom = Renderer.createDisplayObject(component.component.name);
+      }
+
+      this.prev = component;
+      this.rerender = false;
+    }
+
+    reconcile(prev: Component, current: Component) {
+      const sameType = prev.type === current.type;
+
+      if (sameType) {
+        // update
+      }
+      if (!sameType && current.type === "component") {
+        // add
+        Renderer.createComponent(current.component, {
           container: this.container,
           origin: new PIXI.Point(0, 0),
         });
       }
-    }
-
-    display(component: Component) {
-      if (hash(component) === this.cache) {
-        return;
+      if (!sameType && prev.type === "component") {
+        // remove
       }
-
-      console.log("calculate diff");
-
-      this.diff(this.container, this.prev, component);
-
-      this.cache = hash(component);
-      this.prev = component;
     }
 
     diff(container: PIXI.Container, prev: Component, current: Component) {
@@ -104,7 +197,7 @@ export namespace GSX {
       }
       if (prev.type === "none") {
         if (current.type === "component") {
-          return this.renderPropsComponent(current.component, {
+          return this.createComponent(current.component, {
             container,
             origin: new PIXI.Point(0, 0),
           });
@@ -128,7 +221,7 @@ export namespace GSX {
     ) {
       if (prev.name !== current.name) {
         container.removeChildAt(0);
-        return this.renderPropsComponent(current, {
+        return this.createComponent(current, {
           container,
           origin: new PIXI.Point(0, 0),
         });
@@ -150,7 +243,11 @@ export namespace GSX {
     ) {
       if (name === "text") {
         const text = container as PIXI.Text;
-        const { fontSize, fontFamily, content } = current as TextElementProps;
+        const {
+          fontSize,
+          fontFamily,
+          text: content,
+        } = current as TextElementProps;
 
         if (fontSize && text.style.fontSize !== fontSize) {
           text.style.fontSize = fontSize;
@@ -166,7 +263,7 @@ export namespace GSX {
       }
     }
 
-    renderComponent(
+    static renderComponent(
       component: Component,
       options: { container: PIXI.Container; origin: PIXI.Point },
     ) {
@@ -174,13 +271,13 @@ export namespace GSX {
         return;
       }
       if (component.type === "component") {
-        return this.renderPropsComponent(component.component, options);
+        return Renderer.createComponent(component.component, options);
       }
 
       throw new Error("Invalid component type");
     }
 
-    renderPropsComponent(
+    static createComponent(
       component: PropsComponent,
       options: {
         container: PIXI.Container;
@@ -188,8 +285,11 @@ export namespace GSX {
       },
     ) {
       if (component.name === "text") {
-        const { fontSize, fontFamily, content } =
-          component.props as TextElementProps;
+        const {
+          fontSize,
+          fontFamily,
+          text: content,
+        } = component.props as TextElementProps;
 
         const text = new PIXI.Text(content, {
           fontFamily: fontFamily ?? "serif",
@@ -205,7 +305,7 @@ export namespace GSX {
         const { children, layout } = component.props as ContainerProps;
 
         for (const child of children) {
-          this.renderComponent(child, {
+          Renderer.renderComponent(child, {
             container: options.container,
             origin: options.origin,
           });

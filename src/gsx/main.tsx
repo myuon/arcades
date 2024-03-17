@@ -17,6 +17,8 @@ const gamePlugin = (): GamePlugin => {
       game.app.stage.on("click", () => {
         size += 2;
         gap += 2;
+
+        renderer.rerender = true;
       });
 
       renderer.render(
@@ -26,8 +28,8 @@ const gamePlugin = (): GamePlugin => {
             gap: gap,
           },
           children: [
-            GSX.text({ fontSize: size, content: "Hello, World" }),
-            GSX.text({ fontSize: size, content: "Next line" }),
+            GSX.text({ fontSize: size, text: "Hello, World" }),
+            GSX.text({ fontSize: size, text: "Next line" }),
           ],
         }),
       );
