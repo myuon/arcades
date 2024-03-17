@@ -23,9 +23,6 @@ const keysPressing: { [key: string]: number } = {};
 // ];
 
 const keys = "cdefgab".split("");
-const findKeyY = (key: string, pitch: number) => {
-  return keys.length - 1 - keys.indexOf(key) + (5 - pitch) * keys.length;
-};
 
 interface Note {
   key: string;
@@ -45,6 +42,17 @@ const main = () => {
   app.stage.hitArea = app.screen;
 
   const gridSize = { x: 64, y: 24 };
+  const findNote = (x: number, y: number) => {
+    const ikey = Math.floor(y / gridSize.y);
+    const key = keys[keys.length - 1 - (ikey % keys.length)];
+    const pitch = 5 - Math.floor(ikey / keys.length);
+
+    return {
+      key,
+      pitch,
+      start: Math.floor(x / gridSize.x) - 1,
+    };
+  };
 
   const notes: Note[] = [
     {
@@ -68,7 +76,17 @@ const main = () => {
         note.dom.cursor = "pointer";
         note.dom.position.set(note.start * 24, note.pitch * 24);
         note.dom.x = (note.start + 1) * gridSize.x;
-        note.dom.y = findKeyY(note.key, note.pitch) * gridSize.y;
+
+        // find Y
+        let y = 0;
+        while (
+          findNote(0, y).key !== note.key ||
+          findNote(0, y).pitch !== note.pitch
+        ) {
+          y += gridSize.y;
+        }
+
+        note.dom.y = y;
 
         app.stage.addChild(note.dom);
       }
@@ -98,15 +116,11 @@ const main = () => {
     const line = createRectangleGraphics(1024, 1, 0x666666);
     line.position.set(0, i);
 
-    const text = new PIXI.Text(
-      `${keys[keys.length - 1 - ((i / gridSize.y) % keys.length)]}${Math.floor(
-        5 - i / gridSize.y / keys.length,
-      )}`,
-      {
-        fontSize: 18,
-        fill: 0xffffff,
-      },
-    );
+    const note = findNote(0, i);
+    const text = new PIXI.Text(`${note.key}${note.pitch}`, {
+      fontSize: 18,
+      fill: 0xffffff,
+    });
     text.position.set(12, i);
 
     app.stage.addChild(line);
