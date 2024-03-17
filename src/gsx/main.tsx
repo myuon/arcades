@@ -7,6 +7,7 @@ import { GSX } from "../utils/gsx";
 const gamePlugin = (): GamePlugin => {
   const renderer = new GSX.Renderer();
   let size = 16;
+  let gap = 0;
 
   return {
     name: "game",
@@ -15,11 +16,23 @@ const gamePlugin = (): GamePlugin => {
 
       game.app.stage.on("click", () => {
         size += 2;
+        gap += 2;
       });
+
+      renderer.render(
+        GSX.container({
+          layout: {
+            type: "column",
+            gap: gap,
+          },
+          children: [
+            GSX.text({ fontSize: size, content: "Hello, World" }),
+            GSX.text({ fontSize: size, content: "Next line" }),
+          ],
+        }),
+      );
     },
-    onRender: (game) => {
-      renderer.display(GSX.text({ fontSize: size, content: "Hello, World" }));
-    },
+    onRender: (game) => {},
   };
 };
 
