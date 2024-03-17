@@ -29,10 +29,11 @@ interface Note {
   length: number;
   start: number;
   dom: PIXI.Graphics;
+  inScreen: PIXI.Point;
 }
 
 const main = () => {
-  const canvasSize = { width: 1024, height: 500 };
+  const canvasSize = { width: 960, height: 500 };
   const app = new PIXI.Application({
     width: canvasSize.width,
     height: canvasSize.height,
@@ -62,9 +63,11 @@ const main = () => {
     if (!note.pitch) {
       note.pitch = 3;
     }
-
     if (!note.id) {
       note.id = nanoid();
+    }
+    if (!note.inScreen) {
+      note.inScreen = new PIXI.Point(0, 0);
     }
 
     if (!note.dom) {
@@ -76,7 +79,7 @@ const main = () => {
       graphics.eventMode = "static";
       graphics.cursor = "pointer";
       graphics.position.set(note.start * 24, note.pitch * 24);
-      graphics.x = (note.start + 1) * gridSize.x;
+      note.inScreen.x = (note.start + 1) * gridSize.x;
 
       graphics.on(
         "pointerdown",
@@ -108,9 +111,9 @@ const main = () => {
       ) {
         y += gridSize.y;
       }
+      note.inScreen.y = y;
 
-      graphics.y = y;
-
+      graphics.position.copyFrom(note.inScreen);
       note.dom = graphics;
 
       app.stage.addChild(note.dom);
@@ -204,8 +207,56 @@ const main = () => {
     return words.join(" ");
   };
 
-  // grid
-  for (let i = 0; i < canvasSize.height; i += gridSize.y) {
+  const screen = {
+    width: 3500,
+    height: 750,
+    screenPointRaw: new PIXI.Point(0, 0),
+    screenPoint: new PIXI.Point(0, 0),
+    dom: {
+      scrollBarX: new PIXI.Graphics(),
+      scrollBarY: new PIXI.Graphics(),
+      lines: [],
+      headers: [],
+    },
+  };
+  const initScreen = () => {
+    const scrollBarX = screen.dom.scrollBarX;
+    scrollBarX.beginFill(0xff0000);
+    scrollBarX.drawRect(
+      0,
+      0,
+      (canvasSize.width * canvasSize.width) / screen.width,
+      10,
+    );
+    scrollBarX.endFill();
+    scrollBarX.position.set(0, canvasSize.height - 10);
+    scrollBarX.zIndex = 2;
+    app.stage.addChild(scrollBarX);
+
+    const scrollBarY = screen.dom.scrollBarY;
+    scrollBarY.beginFill(0xff0000);
+    scrollBarY.drawRect(
+      0,
+      0,
+      10,
+      (canvasSize.height * canvasSize.height) / screen.height,
+    );
+    scrollBarY.endFill();
+    scrollBarY.position.set(canvasSize.width - 10, 0);
+    scrollBarY.zIndex = 2;
+    app.stage.addChild(scrollBarY);
+  };
+
+  const reposition = () => {
+    for (const r of notes) {
+      r.dom.position.set(
+        r.inScreen.x - screen.screenPoint.x,
+        r.inScreen.y - screen.screenPoint.y,
+      );
+    }
+  };
+
+  for (let i = 0; i < screen.height; i += gridSize.y) {
     const line = createRectangleGraphics(1024, 1, 0x666666);
     line.position.set(0, i);
 
@@ -219,7 +270,7 @@ const main = () => {
     app.stage.addChild(line);
     app.stage.addChild(text);
   }
-  for (let i = 0; i < canvasSize.width; i += gridSize.x) {
+  for (let i = 0; i < screen.width; i += gridSize.x) {
     const line = createRectangleGraphics(1, 1024, 0xffffff);
     line.position.set(i, 0);
 
@@ -272,6 +323,40 @@ const main = () => {
       length: 1,
       start: Math.floor(event.global.x / gridSize.x) - 1,
     });
+  });
+
+  initScreen();
+
+  const updateMapPoint = (x: number, y: number) => {
+    screen.screenPointRaw.x = Math.max(
+      0,
+      Math.min(screen.width - canvasSize.width, x),
+    );
+    screen.screenPointRaw.y = Math.max(
+      0,
+      Math.min(screen.height - canvasSize.height, y),
+    );
+
+    screen.screenPoint.x =
+      Math.floor(screen.screenPointRaw.x / gridSize.x) * gridSize.x;
+    screen.screenPoint.y =
+      Math.floor(screen.screenPointRaw.y / gridSize.y) * gridSize.y;
+
+    screen.dom.scrollBarX.position.x =
+      (screen.screenPoint.x * canvasSize.width) / screen.width;
+    screen.dom.scrollBarY.position.y =
+      (screen.screenPoint.y * canvasSize.height) / screen.height;
+
+    reposition();
+  };
+
+  updateMapPoint(0, 0);
+
+  app.stage.on("wheel", (event) => {
+    updateMapPoint(
+      screen.screenPointRaw.x + event.deltaX,
+      screen.screenPointRaw.y + event.deltaY,
+    );
   });
 
   app.ticker.add(() => {
@@ -330,7 +415,7 @@ export default function Page() {
     };
     const keyuphandler = (e: KeyboardEvent) => {
       e.preventDefault();
-      keysPressed[e.code] = false;
+      delete keysPressed[e.code];
     };
     const contextmenuhandler = (e: Event) => {
       e.preventDefault();
