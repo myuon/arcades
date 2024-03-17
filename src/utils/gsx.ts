@@ -57,19 +57,19 @@ export namespace GSX {
     name?: string;
     props: PropsRecord;
     parent?: Fiber;
+    child?: Fiber;
+    next?: Fiber;
+    alternate?: Fiber;
   }
 
   export class Renderer {
     container: PIXI.Container;
-    prev: Component;
+    prev: Fiber | undefined;
     rerender: boolean;
 
     constructor() {
       this.container = new PIXI.Container();
       this.rerender = true;
-      this.prev = {
-        type: "none",
-      };
     }
 
     static createDisplayObject(name: PropsComponent["name"]) {
@@ -153,29 +153,49 @@ export namespace GSX {
         fiber.parent.dom?.addChild(fiber.dom);
       }
 
-      fiber.props.children?.forEach((child: Component) => {
+      let prevFiber: Fiber = fiber;
+      (fiber.props.children as Component[])?.forEach((child, index) => {
         if (child.type === "component") {
-          Renderer.processFiber({
+          const newFiber = {
             dom: null,
             name: child.component.name,
             props: child.component.props,
             parent: fiber,
-          });
+          };
+
+          if (index === 0) {
+            prevFiber.child = newFiber;
+          } else {
+            prevFiber.next = newFiber;
+          }
+
+          Renderer.processFiber(newFiber);
+
+          prevFiber = newFiber;
         }
       });
     }
 
-    static renderTo(component: Component, container: PIXI.Container) {
+    static renderTo(
+      component: Component,
+      container: PIXI.Container,
+      prev: Fiber | undefined,
+    ) {
       if (component.type === "none") {
         return;
       }
 
-      Renderer.processFiber({
+      const rootFiber: Fiber = {
         dom: container,
         props: {
           children: [component],
         },
-      });
+        alternate: prev,
+      };
+
+      Renderer.processFiber(rootFiber);
+
+      return rootFiber;
     }
 
     render(component: Component) {
@@ -185,10 +205,10 @@ export namespace GSX {
 
       console.log("render");
 
-      Renderer.renderTo(component, this.container);
-
-      this.prev = component;
+      this.prev = Renderer.renderTo(component, this.container, this.prev);
       this.rerender = false;
+
+      console.log(this.prev);
     }
 
     // diff(container: PIXI.Container, prev: Component, current: Component) {
