@@ -226,18 +226,25 @@ const main = () => {
     app.stage.addChild(line);
   }
 
-  addNote({
-    key: "c",
-    pitch: 4,
-    length: 1,
-    start: 0,
-  });
-  addNote({
-    key: "d",
-    pitch: 3,
-    length: 1,
-    start: 1,
-  });
+  try {
+    const ns: Note[] = JSON.parse(localStorage.getItem("synth") ?? "");
+    for (const note of ns) {
+      addNote(note);
+    }
+  } catch (err) {
+    addNote({
+      key: "c",
+      pitch: 4,
+      length: 1,
+      start: 0,
+    });
+    addNote({
+      key: "d",
+      pitch: 3,
+      length: 1,
+      start: 1,
+    });
+  }
 
   app.stage.on("pointerup", onDragEnd);
   app.stage.on("pointerupoutside", onDragEnd);
@@ -284,7 +291,23 @@ const main = () => {
 
       sss.playMml([mml], {
         isLooping: false,
+        speed: 2,
       });
+    }
+    if (keysPressing.ControlLeft > 0 && keysPressing.KeyS === 1) {
+      localStorage.setItem(
+        "synth",
+        JSON.stringify(
+          notes.map((note) => ({
+            key: note.key,
+            pitch: note.pitch,
+            length: note.length,
+            start: note.start,
+          })),
+        ),
+      );
+
+      console.log("saved");
     }
   });
 
