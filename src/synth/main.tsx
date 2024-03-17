@@ -40,7 +40,7 @@ const main = () => {
   app.stage.eventMode = "static";
   app.stage.hitArea = app.screen;
 
-  const gridSize = { x: 64, y: 24 };
+  const gridSize = { x: 48, y: 16 };
   const findNote = (x: number, y: number) => {
     const ikey = Math.floor(y / gridSize.y);
     const key = keys[keys.length - 1 - (ikey % keys.length)];
@@ -210,8 +210,8 @@ const main = () => {
     line.position.set(0, i);
 
     const note = findNote(0, i);
-    const text = new PIXI.Text(`${note.key}${note.pitch}`, {
-      fontSize: 18,
+    const text = new PIXI.Text(`${note.key.toUpperCase()}${note.pitch}`, {
+      fontSize: 14,
       fill: 0xffffff,
     });
     text.position.set(12, i);
