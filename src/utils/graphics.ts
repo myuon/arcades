@@ -28,14 +28,24 @@ export const centerOf = (graphics: PIXI.Graphics) => {
   );
 };
 
+export const drawRectangleGraphics = (
+  graphics: PIXI.Graphics,
+  width: number,
+  height: number,
+  color: number,
+) => {
+  graphics.beginFill(color);
+  graphics.drawRect(0, 0, width, height);
+  graphics.endFill();
+};
+
 export const createRectangleGraphics = (
   width: number,
   height: number,
   color: number,
 ) => {
   const graphics = new PIXI.Graphics();
-  graphics.beginFill(color);
-  graphics.drawRect(0, 0, width, height);
-  graphics.endFill();
+  drawRectangleGraphics(graphics, width, height, color);
+
   return graphics;
 };
