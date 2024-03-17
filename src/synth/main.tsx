@@ -256,7 +256,7 @@ const main = () => {
       }
     }
 
-    if (keysPressing[" "] === 1) {
+    if (keysPressing.Space === 1) {
       const mml = renderMML();
       console.log(mml);
 
@@ -281,11 +281,11 @@ export default function Page() {
 
     const keydownhandler = (e: KeyboardEvent) => {
       e.preventDefault();
-      keysPressed[e.key] = true;
+      keysPressed[e.code] = true;
     };
     const keyuphandler = (e: KeyboardEvent) => {
       e.preventDefault();
-      keysPressed[e.key] = false;
+      keysPressed[e.code] = false;
     };
     const contextmenuhandler = (e: Event) => {
       e.preventDefault();
