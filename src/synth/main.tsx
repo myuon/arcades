@@ -364,8 +364,33 @@ const main = () => {
     );
   });
 
-  app.ticker.add(() => {
+  const playing = {
+    isPlaying: false,
+    bpm: 166,
+    x: 0,
+    dom: new PIXI.Graphics(),
+  };
+  playing.dom.beginFill(0x00ff00);
+  playing.dom.drawRect(gridSize.x, 0, 1, canvasSize.height);
+  playing.dom.endFill();
+  app.stage.addChild(playing.dom);
+
+  const bpmCoeff = 1.66;
+  const startPlaying = () => {
+    playing.isPlaying = true;
+    playing.x = 0;
+  };
+  const updatePlaying = (delta: number) => {
+    if (playing.isPlaying) {
+      playing.x += gridSize.x / (30 / ((bpmCoeff * playing.bpm) / 100) / delta);
+
+      playing.dom.position.x = playing.x - screen.screenPoint.x;
+    }
+  };
+
+  app.ticker.add((delta) => {
     sss.update();
+    updatePlaying(delta);
 
     for (const key in keysPressed) {
       if (keysPressed[key]) {
@@ -381,8 +406,9 @@ const main = () => {
 
       sss.playMml([mml], {
         isLooping: false,
-        speed: 2,
+        speed: (bpmCoeff * playing.bpm) / 100,
       });
+      startPlaying();
     }
     if (keysPressing.ControlLeft > 0 && keysPressing.KeyS === 1) {
       localStorage.setItem(
