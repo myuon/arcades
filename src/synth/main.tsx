@@ -113,8 +113,6 @@ const main = () => {
         y += gridSize.y;
       }
       note.inScreen.y = y;
-
-      graphics.position.copyFrom(note.inScreen);
       note.dom = graphics;
 
       app.stage.addChild(note.dom);
@@ -282,13 +280,6 @@ const main = () => {
         r.inScreen.y - screen.screenPoint.y,
       );
     }
-
-    for (const header of screen.headers) {
-      header.dom.position.set(
-        header.inScreen.x - screen.screenPoint.x,
-        header.inScreen.y - screen.screenPoint.y,
-      );
-    }
   };
 
   try {
@@ -336,6 +327,7 @@ const main = () => {
       length: 1,
       start: n.start,
     });
+    reposition();
   });
 
   initScreen();
@@ -428,7 +420,7 @@ export default function Page() {
     };
     const keyuphandler = (e: KeyboardEvent) => {
       e.preventDefault();
-      delete keysPressed[e.code];
+      keysPressed[e.code] = false;
     };
     const contextmenuhandler = (e: Event) => {
       e.preventDefault();
