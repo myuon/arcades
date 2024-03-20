@@ -181,17 +181,15 @@ const main = () => {
 
     length += 4;
 
-    const tracks = [
-      Array.from({ length }).map(() => ({
-        id: nanoid(),
-        key: "rest",
-        pitch: 0,
-      })),
-    ];
+    const tracks: {
+      id: string;
+      key: string;
+      pitch: number;
+    }[][] = Array.from({ length }).map(() => []);
 
     for (const note of notes) {
       for (let i = note.start; i < note.start + note.length; i++) {
-        tracks[0][i] = { id: note.id, key: note.key, pitch: note.pitch };
+        tracks[i].push({ id: note.id, key: note.key, pitch: note.pitch });
       }
     }
 
@@ -199,13 +197,14 @@ const main = () => {
     let pitch = 4;
     let i = 0;
     while (i < length) {
-      const note = tracks[0][i];
-      if (note.key === "rest") {
+      const isRest = tracks[i].length === 0;
+      if (isRest) {
         words.push("r4");
         i++;
         continue;
       }
 
+      const note = tracks[i][0];
       if (note.pitch !== pitch) {
         words.push(`o${note.pitch}`);
 
@@ -213,7 +212,7 @@ const main = () => {
       }
 
       let l = 0;
-      while (i < length && tracks[0][i].id === note.id) {
+      while (i < length && tracks[i]?.[0]?.id === note.id) {
         i++;
         l++;
       }
