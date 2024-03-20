@@ -151,6 +151,7 @@ const main = () => {
         });
       });
 
+      container.zIndex = 1;
       note.dom = container;
       note.dom.position.set(note.start * 24, note.pitch * 24);
 
@@ -238,8 +239,13 @@ const main = () => {
         pitch = note.pitch;
       }
 
-      words.push(`${note.key}4`);
-      i++;
+      let l = 0;
+      while (i < length && tracks[0][i].key === note.key) {
+        i++;
+        l++;
+      }
+
+      words.push(`${note.key}${4 / l}`);
     }
 
     return words.join(" ");
