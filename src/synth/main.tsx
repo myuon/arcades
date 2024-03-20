@@ -182,12 +182,16 @@ const main = () => {
     length += 4;
 
     const tracks = [
-      Array.from({ length }).map(() => ({ key: "rest", pitch: 0 })),
+      Array.from({ length }).map(() => ({
+        id: nanoid(),
+        key: "rest",
+        pitch: 0,
+      })),
     ];
 
     for (const note of notes) {
       for (let i = note.start; i < note.start + note.length; i++) {
-        tracks[0][i] = { key: note.key, pitch: note.pitch };
+        tracks[0][i] = { id: note.id, key: note.key, pitch: note.pitch };
       }
     }
 
@@ -209,7 +213,7 @@ const main = () => {
       }
 
       let l = 0;
-      while (i < length && tracks[0][i].key === note.key) {
+      while (i < length && tracks[0][i].id === note.id) {
         i++;
         l++;
       }
