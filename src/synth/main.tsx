@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import * as sss from "sounds-some-sounds";
 import { asContainer } from "../utils/container";
 import { createRectangleGraphics } from "../utils/graphics";
+import { withOnDrag } from "../utils/interact";
 
 const keysPressed: { [key: string]: boolean } = {};
 const keysPressing: { [key: string]: number } = {};
@@ -87,25 +88,11 @@ const main = () => {
       note.inScreen.x = (note.start + 1) * gridSize.x;
 
       graphics.on(
-        "pointerdown",
-        function (this: string) {
-          dragTarget = notes.find((note) => note.id === this) ?? null;
-          if (dragTarget?.dom) {
-            dragTarget.dom.alpha = 0.5;
-          }
-
-          app.stage.on("pointermove", onDragMoveNote);
-        },
-        note.id,
-      );
-      graphics.on(
         "pointerup",
         function (this: string, event: PIXI.FederatedPointerEvent) {
           if (event.button === 2) {
             deleteNote(this);
           }
-
-          app.stage.off("pointermove", onDragMoveNote);
         },
         note.id,
       );
@@ -126,8 +113,29 @@ const main = () => {
       handle.position.set(graphics.width - 8, 0);
 
       const container = asContainer(graphics, handle);
+      withOnDrag(
+        graphics,
+        app.stage,
+        (event: PIXI.FederatedPointerEvent) => {
+          graphics.alpha = 0.5;
+          container.position.set(
+            Math.floor(event.global.x / gridSize.x) * gridSize.x,
+            Math.floor(event.global.y / gridSize.y) * gridSize.y,
+          );
+        },
+        () => {
+          graphics.alpha = 1;
 
-      const onDragMoveHandle = (event: PIXI.FederatedPointerEvent) => {
+          const i = findNote(container.position.x, container.position.y);
+          updateNote(note.id, {
+            key: i.key,
+            pitch: i.pitch,
+            start: i.start,
+          });
+        },
+      );
+
+      withOnDrag(handle, app.stage, (event: PIXI.FederatedPointerEvent) => {
         const length = Math.max(
           Math.round((event.global.x - container.x) / gridSize.x),
           1,
@@ -139,15 +147,6 @@ const main = () => {
 
         updateNote(note.id, {
           length,
-        });
-      };
-
-      handle.on("pointerdown", (event) => {
-        event.stopPropagation();
-
-        app.stage.on("pointermove", onDragMoveHandle);
-        app.stage.once("pointerup", () => {
-          app.stage.off("pointermove", onDragMoveHandle);
         });
       });
 
@@ -171,36 +170,6 @@ const main = () => {
     if (i !== -1) {
       app.stage.removeChild(notes[i].dom as PIXI.Graphics);
       notes = notes.filter((note) => note.id !== id);
-    }
-  };
-
-  let dragTarget: Note | null = null;
-  const onDragMoveNote = (event: PIXI.FederatedPointerEvent) => {
-    if (dragTarget) {
-      dragTarget.dom?.position.set(
-        Math.floor(event.global.x / gridSize.x) * gridSize.x,
-        Math.floor(event.global.y / gridSize.y) * gridSize.y,
-      );
-    }
-  };
-  const onDragEnd = () => {
-    if (dragTarget) {
-      app.stage.off("pointermove", onDragMoveNote);
-      if (dragTarget.dom) {
-        dragTarget.dom.alpha = 1;
-      }
-      const note = notes.find((note) => note.id === dragTarget?.id);
-      if (note) {
-        const i = findNote(dragTarget.dom?.x, dragTarget.dom?.y);
-
-        updateNote(note.id, {
-          key: i.key,
-          pitch: i.pitch,
-          start: i.start,
-        });
-      }
-
-      dragTarget = null;
     }
   };
 
@@ -347,8 +316,6 @@ const main = () => {
     });
   }
 
-  app.stage.on("pointerup", onDragEnd);
-  app.stage.on("pointerupoutside", onDragEnd);
   app.stage.on("pointerdown", (event) => {
     for (const note of notes) {
       if (
