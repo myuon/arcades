@@ -231,7 +231,7 @@ const main = () => {
     screenPoint: new PIXI.Point(0, 0),
     headers: [] as {
       inScreen: PIXI.Point;
-      dom: PIXI.Text;
+      dom: PIXI.Container;
     }[],
     dom: {
       scrollBarX: new PIXI.Graphics(),
@@ -266,16 +266,31 @@ const main = () => {
     app.stage.addChild(scrollBarY);
 
     for (let i = 0; i < screen.height; i += gridSize.y) {
+      const container = new PIXI.Container();
+
       const note = findNote(0, i);
+      const isBlack = note.key.includes("+");
+
+      if (!isBlack) {
+        const background = createRectangleGraphics(
+          gridSize.x,
+          gridSize.y,
+          0xffffff,
+        );
+
+        container.addChild(background);
+      }
+
       const text = new PIXI.Text(`${note.key.toUpperCase()}${note.pitch}`, {
         fontSize: 14,
-        fill: 0xffffff,
+        fill: isBlack ? 0xffffff : 0x333333,
       });
-      text.position.set(12, i);
+      text.position.set(12, 0);
+      container.addChild(text);
 
-      screen.headers.push({ inScreen: new PIXI.Point(12, i), dom: text });
+      screen.headers.push({ inScreen: new PIXI.Point(0, i), dom: container });
 
-      app.stage.addChild(text);
+      app.stage.addChild(container);
     }
     for (let i = 0; i < screen.height; i += gridSize.y) {
       const line = createRectangleGraphics(1024, 1, 0x666666);
