@@ -71,10 +71,13 @@ const main = () => {
     if (!note.inScreen) {
       note.inScreen = new PIXI.Point(0, 0);
     }
+    if (!note.length) {
+      note.length = 1;
+    }
 
     if (!note.dom) {
       const graphics = createRectangleGraphics(
-        gridSize.x,
+        gridSize.x * note.length,
         gridSize.y,
         0xff0000,
       );
@@ -120,7 +123,7 @@ const main = () => {
       const handle = createRectangleGraphics(8, gridSize.y, 0x993333);
       handle.eventMode = "static";
       handle.cursor = "ew-resize";
-      handle.position.set(gridSize.x - 8, 0);
+      handle.position.set(graphics.width - 8, 0);
 
       const container = asContainer(graphics, handle);
 
