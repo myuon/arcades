@@ -22,7 +22,7 @@ const keysPressing: { [key: string]: number } = {};
 // "@hit@d@s234851483 v50 l16 o4 rcr4^16c rcr4. ccr4^16c rcr4.^16 cr4^16c rcr4.^16 cr4^16c rcr4.",
 // ];
 
-const keys = "cdefgab".split("");
+const keys = ["c", "c+", "d", "d+", "e", "f", "f+", "g", "g+", "a", "a+", "b"];
 
 interface Note {
   id: string;
@@ -35,7 +35,7 @@ interface Note {
 }
 
 const main = () => {
-  const canvasSize = { width: 960, height: 500 };
+  const canvasSize = { width: 960, height: 900 };
   const app = new PIXI.Application({
     width: canvasSize.width,
     height: canvasSize.height,
@@ -226,7 +226,7 @@ const main = () => {
 
   const screen = {
     width: 3500,
-    height: 650,
+    height: 900,
     screenPointRaw: new PIXI.Point(0, 0),
     screenPoint: new PIXI.Point(0, 0),
     headers: [] as {
@@ -293,6 +293,13 @@ const main = () => {
 
   const reposition = () => {
     for (const r of notes) {
+      r.dom.position.set(
+        r.inScreen.x - screen.screenPoint.x,
+        r.inScreen.y - screen.screenPoint.y,
+      );
+    }
+
+    for (const r of screen.headers) {
       r.dom.position.set(
         r.inScreen.x - screen.screenPoint.x,
         r.inScreen.y - screen.screenPoint.y,
