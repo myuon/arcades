@@ -287,6 +287,7 @@ const main = () => {
       });
       text.position.set(12, 0);
       container.addChild(text);
+      container.zIndex = 3;
 
       screen.headers.push({ inScreen: new PIXI.Point(0, i), dom: container });
 
@@ -315,10 +316,7 @@ const main = () => {
     }
 
     for (const r of screen.headers) {
-      r.dom.position.set(
-        r.inScreen.x - screen.screenPoint.x,
-        r.inScreen.y - screen.screenPoint.y,
-      );
+      r.dom.position.set(0, r.inScreen.y - screen.screenPoint.y);
     }
   };
 
