@@ -193,34 +193,48 @@ const main = () => {
       }
     }
 
-    const words = ["@synth o4"];
-    let pitch = 4;
-    let i = 0;
-    while (i < length) {
-      const isRest = tracks[i].length === 0;
-      if (isRest) {
-        words.push("r4");
-        i++;
-        continue;
+    let trackNum = 0;
+    const mmls = [];
+
+    while (trackNum < 20) {
+      const words = ["@synth o4"];
+      let pitch = 4;
+      let i = 0;
+      while (i < length) {
+        const isRest = tracks[i].length === 0;
+        if (isRest) {
+          words.push("r4");
+          i++;
+          continue;
+        }
+
+        const note = tracks[i][0];
+        if (note.pitch !== pitch) {
+          words.push(`o${note.pitch}`);
+
+          pitch = note.pitch;
+        }
+
+        let l = 0;
+        while (i < length && tracks[i]?.[0]?.id === note.id) {
+          tracks[i].shift();
+          i++;
+          l++;
+        }
+
+        words.push(`${note.key}${4 / l}`);
       }
 
-      const note = tracks[i][0];
-      if (note.pitch !== pitch) {
-        words.push(`o${note.pitch}`);
+      mmls.push(words.join(" "));
 
-        pitch = note.pitch;
+      trackNum++;
+
+      if (tracks.every((track) => track.length === 0)) {
+        break;
       }
-
-      let l = 0;
-      while (i < length && tracks[i]?.[0]?.id === note.id) {
-        i++;
-        l++;
-      }
-
-      words.push(`${note.key}${4 / l}`);
     }
 
-    return words.join(" ");
+    return mmls;
   };
 
   const screen = {
@@ -438,10 +452,10 @@ const main = () => {
     }
 
     if (keysPressing.Space === 1) {
-      const mml = renderMML();
-      console.log(mml);
+      const mmls = renderMML();
+      console.log(mmls);
 
-      sss.playMml([mml], {
+      sss.playMml(mmls, {
         isLooping: false,
         speed: (bpmCoeff * playing.bpm) / 100,
       });
