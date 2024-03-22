@@ -3,7 +3,10 @@ import * as PIXI from "pixi.js";
 import { useEffect, useRef } from "react";
 import * as sss from "sounds-some-sounds";
 import { asContainer } from "../utils/container";
-import { createRectangleGraphics } from "../utils/graphics";
+import {
+  createRectangleGraphics,
+  drawRectangleGraphics,
+} from "../utils/graphics";
 import { withOnDrag } from "../utils/interact";
 
 const keysPressed: { [key: string]: boolean } = {};
@@ -30,8 +33,13 @@ interface Note {
   pitch: number;
   length: number;
   start: number;
-  dom: PIXI.Container;
+  dom: {
+    container: PIXI.Container;
+    base: PIXI.Graphics;
+    handle: PIXI.Graphics;
+  };
   inScreen: PIXI.Point;
+  selected: boolean;
 }
 
 const main = () => {
@@ -75,13 +83,12 @@ const main = () => {
     if (!note.length) {
       note.length = 1;
     }
+    if (!note.selected) {
+      note.selected = false;
+    }
 
     if (!note.dom) {
-      const graphics = createRectangleGraphics(
-        gridSize.x * note.length,
-        gridSize.y,
-        0xff0000,
-      );
+      const graphics = new PIXI.Graphics();
 
       graphics.eventMode = "static";
       graphics.cursor = "pointer";
@@ -96,6 +103,11 @@ const main = () => {
         },
         note.id,
       );
+      graphics.on("pointerdown", () => {
+        note.selected = !(note.selected ?? false);
+
+        renderNote(note as Note);
+      });
 
       // find Y
       let y = 0;
@@ -107,10 +119,9 @@ const main = () => {
       }
       note.inScreen.y = y;
 
-      const handle = createRectangleGraphics(8, gridSize.y, 0x993333);
+      const handle = new PIXI.Graphics();
       handle.eventMode = "static";
       handle.cursor = "ew-resize";
-      handle.position.set(graphics.width - 8, 0);
 
       const container = asContainer(graphics, handle);
       withOnDrag(
@@ -151,11 +162,17 @@ const main = () => {
       });
 
       container.zIndex = 1;
-      note.dom = container;
-      note.dom.position.set(note.start * 24, note.pitch * 24);
+      note.dom = {
+        container,
+        base: graphics,
+        handle,
+      };
+      note.dom.container.position.set(note.start * 24, note.pitch * 24);
 
-      app.stage.addChild(note.dom);
+      app.stage.addChild(note.dom.container);
     }
+
+    renderNote(note as Note);
 
     notes.push(note as Note);
   };
@@ -168,9 +185,24 @@ const main = () => {
   const deleteNote = (id: string) => {
     const i = notes.findIndex((note) => note.id === id);
     if (i !== -1) {
-      app.stage.removeChild(notes[i].dom as PIXI.Graphics);
+      app.stage.removeChild(notes[i].dom.container as PIXI.Graphics);
       notes = notes.filter((note) => note.id !== id);
     }
+  };
+  const renderNote = (note: Note) => {
+    note.dom.base.clear();
+    if (note.selected) {
+      note.dom.base.lineStyle(2, 0xffffff, 1);
+    }
+    drawRectangleGraphics(
+      note.dom.base,
+      gridSize.x * (note.length ?? 1),
+      gridSize.y,
+      0xff0000,
+    );
+
+    drawRectangleGraphics(note.dom.handle, 8, gridSize.y, 0x993333);
+    note.dom.handle.position.set(note.dom.base.width - 8, 0);
   };
 
   const renderMML = () => {
@@ -322,7 +354,7 @@ const main = () => {
 
   const reposition = () => {
     for (const r of notes) {
-      r.dom.position.set(
+      r.dom.container.position.set(
         r.inScreen.x - screen.screenPoint.x,
         r.inScreen.y - screen.screenPoint.y,
       );
@@ -355,9 +387,7 @@ const main = () => {
 
   app.stage.on("pointerdown", (event) => {
     for (const note of notes) {
-      if (
-        (note.dom?.children[0] as PIXI.Graphics).containsPoint(event.global)
-      ) {
+      if (note.dom.base.containsPoint(event.global)) {
         return;
       }
     }
